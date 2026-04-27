@@ -10,6 +10,7 @@ export const LEVELS = [
     country: 'USA',
     food: '🍔',
     cry: 'YEEHAW!',
+    speech: { text: 'Yee haw!', lang: 'en-US', rate: 1.1, pitch: 1.4 },
     sky: ['#fb923c', '#f59e0b', '#facc15'],
     ground: '#7c2d12',
     accent: '#ef4444',
@@ -23,6 +24,7 @@ export const LEVELS = [
     country: 'Japan',
     food: '🍣',
     cry: 'ITADAKIMASU!!',
+    speech: { text: 'Itadakimasu!', lang: 'ja-JP', rate: 1.1, pitch: 1.2 },
     sky: ['#fda4af', '#fbcfe8', '#e0f2fe'],
     ground: '#7f1d1d',
     accent: '#e11d48',
@@ -36,6 +38,7 @@ export const LEVELS = [
     country: 'Mexico',
     food: '🌮',
     cry: '¡AY CARAMBA!',
+    speech: { text: 'Ay caramba!', lang: 'es-MX', rate: 1.1, pitch: 1.1 },
     sky: ['#f59e0b', '#fb923c', '#dc2626'],
     ground: '#78350f',
     accent: '#16a34a',
@@ -49,6 +52,7 @@ export const LEVELS = [
     country: 'Italy',
     food: '🍕',
     cry: 'MAMMA MIA!',
+    speech: { text: 'Mamma mia!', lang: 'it-IT', rate: 1.05, pitch: 1.3 },
     sky: ['#22d3ee', '#0ea5e9', '#1e40af'],
     ground: '#365314',
     accent: '#16a34a',
@@ -62,6 +66,7 @@ export const LEVELS = [
     country: 'Russia',
     food: '🥟',
     cry: 'DAVAI DAVAI!!',
+    speech: { text: 'Davai, davai!', lang: 'ru-RU', rate: 1.15, pitch: 0.85 },
     sky: ['#cbd5e1', '#94a3b8', '#475569'],
     ground: '#1e293b',
     accent: '#dc2626',
@@ -75,6 +80,7 @@ export const LEVELS = [
     country: 'France',
     food: '🥐',
     cry: 'MON DIEU!',
+    speech: { text: 'Mon Dieu!', lang: 'fr-FR', rate: 1.05, pitch: 1.2 },
     sky: ['#7c3aed', '#6366f1', '#1e1b4b'],
     ground: '#0f172a',
     accent: '#fbbf24',
@@ -88,6 +94,7 @@ export const LEVELS = [
     country: 'India',
     food: '🍛',
     cry: 'BAHUT ACHHA!!',
+    speech: { text: 'Bahut acchaa!', lang: 'hi-IN', rate: 1.1, pitch: 1.1 },
     sky: ['#f59e0b', '#dc2626', '#7c2d12'],
     ground: '#451a03',
     accent: '#fbbf24',
@@ -101,6 +108,7 @@ export const LEVELS = [
     country: 'Brazil',
     food: '🥩',
     cry: 'ISSO AÍ!!',
+    speech: { text: 'Isso aí!', lang: 'pt-BR', rate: 1.15, pitch: 1.3 },
     sky: ['#facc15', '#22c55e', '#0ea5e9'],
     ground: '#14532d',
     accent: '#facc15',
@@ -114,6 +122,7 @@ export const LEVELS = [
     country: 'Germany',
     food: '🥨',
     cry: 'WUNDERBAR!!',
+    speech: { text: 'Wunderbar!', lang: 'de-DE', rate: 1.0, pitch: 0.95 },
     sky: ['#fde68a', '#f59e0b', '#1e3a8a'],
     ground: '#365314',
     accent: '#dc2626',
@@ -127,6 +136,7 @@ export const LEVELS = [
     country: 'China',
     food: '🥟',
     cry: 'AIYAH!!',
+    speech: { text: 'Aiya!', lang: 'zh-CN', rate: 1.1, pitch: 1.2 },
     sky: ['#dc2626', '#facc15', '#7c1d1d'],
     ground: '#450a0a',
     accent: '#fbbf24',
@@ -135,10 +145,11 @@ export const LEVELS = [
   },
 ]
 
-export function levelFor(level) {
-  // 1-indexed level → loops with prestige
-  const idx = (level - 1) % LEVELS.length
-  return LEVELS[idx]
+// 1-indexed level → loops over countries with prestige. The starting country
+// is offset by `offset` (used to make today's level appear at level 1 of the run).
+export function levelFor(level, offset = 0) {
+  const idx = (offset + level - 1) % LEVELS.length
+  return LEVELS[(idx + LEVELS.length) % LEVELS.length]
 }
 
 export function totalLevels() {

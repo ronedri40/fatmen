@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { buildShareCard } from '../../utils/shareCard'
+import { buildChallengeUrl } from '../../utils/challengeLink'
 
 export default function ShareButton({ stats, onSound }) {
   const [busy, setBusy] = useState(false)
@@ -26,7 +27,8 @@ export default function ShareButton({ stats, onSound }) {
       blob = await buildShareCard(stats)
       filename = `fatman-${Math.floor(stats.score)}.png`
       file = new File([blob], filename, { type: 'image/png' })
-      url = window.location.origin + window.location.pathname
+      // Encode the challenge into the URL so receivers see "BEAT MY 12,450"
+      url = buildChallengeUrl(stats)
       text = `I scored ${Math.floor(stats.score).toLocaleString()} on Fat Man — beat me?`
     } catch {
       setStatus('error')

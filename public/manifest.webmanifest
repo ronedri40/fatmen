@@ -1,0 +1,17 @@
+{
+  "name": "Fat Man — Around the World",
+  "short_name": "Fat Man",
+  "description": "Tap fast, build combos, make him EXPLODE — travel the world.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#121212",
+  "theme_color": "#fb923c",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "/icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any" },
+    { "src": "/icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "maskable" }
+  ]
+}

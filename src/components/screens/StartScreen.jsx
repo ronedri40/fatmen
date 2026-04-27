@@ -1,8 +1,15 @@
 import { motion } from 'framer-motion'
 import { LEVELS } from '../../constants/levels'
 import { useEffect, useState } from 'react'
+import { todayLevel } from '../../utils/dailyChallenge'
 
-export default function StartScreen({ onStart, highScore, bestLevel }) {
+function fmtTime(ms) {
+  if (!ms) return '—'
+  const s = Math.round(ms / 1000)
+  return `${Math.floor(s/60)}:${String(s%60).padStart(2, '0')}`
+}
+
+export default function StartScreen({ onStart, highScore, bestLevel, dailyBest, challenge }) {
   // Cycle the showcased flag/food
   const [idx, setIdx] = useState(0)
   useEffect(() => {
@@ -10,6 +17,7 @@ export default function StartScreen({ onStart, highScore, bestLevel }) {
     return () => clearInterval(t)
   }, [])
   const showcase = LEVELS[idx]
+  const today = todayLevel()
 
   return (
     <div
@@ -86,6 +94,54 @@ export default function StartScreen({ onStart, highScore, bestLevel }) {
           Build <span className="text-orange-400 font-bold">combos</span> for bigger scores.<br/>
           Make him <span className="text-red-400 font-bold">EXPLODE</span> to travel the world.
         </p>
+
+        {/* Today's challenge */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="px-4 py-2 rounded-2xl border backdrop-blur-md flex items-center gap-3"
+          style={{
+            background: 'rgba(251,146,60,0.15)',
+            borderColor: 'rgba(251,146,60,0.45)',
+          }}
+        >
+          <div className="text-3xl">{today.flag}</div>
+          <div className="flex flex-col leading-tight">
+            <span className="text-[9px] font-black tracking-[0.25em] text-orange-300 uppercase">Today's challenge</span>
+            <span className="text-white text-sm font-black">Beat {today.country}</span>
+            {dailyBest && (
+              <span className="text-orange-200 text-[10px] font-bold tracking-wider">
+                YOUR BEST · {Math.floor(dailyBest.score).toLocaleString()} · {fmtTime(dailyBest.durationMs)}
+              </span>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Friend's challenge */}
+        {challenge && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 0.3, type: 'spring', stiffness: 220 }}
+            className="px-4 py-2.5 rounded-2xl border backdrop-blur-md flex items-center gap-3 max-w-xs"
+            style={{
+              background: 'rgba(168,85,247,0.18)',
+              borderColor: 'rgba(168,85,247,0.55)',
+            }}
+          >
+            <div className="text-3xl">👑</div>
+            <div className="flex flex-col leading-tight">
+              <span className="text-[9px] font-black tracking-[0.25em] text-purple-200 uppercase">Friend's challenge</span>
+              <span className="text-white text-sm font-black">
+                Beat {Math.floor(challenge.score).toLocaleString()}
+              </span>
+              <span className="text-purple-200 text-[10px] font-bold tracking-wider">
+                {challenge.country ? `cleared ${challenge.country}` : 'on Fat Man'}
+              </span>
+            </div>
+          </motion.div>
+        )}
 
         {/* Records */}
         {(highScore > 0 || bestLevel > 1) && (

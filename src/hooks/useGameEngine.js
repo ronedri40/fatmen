@@ -14,6 +14,7 @@ import {
   COMBO_MULTIPLIER_MAX,
 } from '../constants/gameConfig'
 import { usePersistedState } from './usePersistedState'
+import { todayKey, todayLevelIndex } from '../utils/dailyChallenge'
 
 const GAME_STATES = {
   IDLE: 'IDLE',
@@ -167,6 +168,9 @@ export function useGameEngine() {
   const [bestLevel, setBestLevel] = usePersistedState('fatman.bestLevel', 1)
   const [soundOn, setSoundOn] = usePersistedState('fatman.sound', true)
   const [hapticOn, setHapticOn] = usePersistedState('fatman.haptic', true)
+  // dailyBest: { date: 'YYYY-MM-DD', score, durationMs } — only the personal
+  // best for *today's* country counts; resets next day.
+  const [dailyBest, setDailyBest] = usePersistedState('fatman.dailyBest', null)
 
   // Score decay + combo timeout
   useEffect(() => {
@@ -199,6 +203,26 @@ export function useGameEngine() {
     if (state.level > bestLevel) setBestLevel(state.level)
   }, [state.level, bestLevel, setBestLevel])
 
+  // Record daily-best when the player clears the FIRST country of the run
+  // (which, with the daily offset, is today's challenge country).
+  useEffect(() => {
+    if (state.gameState !== GAME_STATES.BOOMING && state.gameState !== GAME_STATES.LEVEL_UP) return
+    if (state.levelDurationMs <= 0) return
+    if (state.level !== 1) return
+    const today = todayKey()
+    const isNewDay = !dailyBest || dailyBest.date !== today
+    const beats = !isNewDay && (
+      state.score > dailyBest.score ||
+      (state.score === dailyBest.score && state.levelDurationMs < dailyBest.durationMs)
+    )
+    if (isNewDay || beats) {
+      setDailyBest({ date: today, score: state.score, durationMs: state.levelDurationMs })
+    }
+  }, [state.gameState, state.levelDurationMs, state.level, state.score, dailyBest, setDailyBest])
+
+  // dailyBest, but only if it's actually for today (yesterday's value is treated as missing)
+  const dailyBestToday = dailyBest && dailyBest.date === todayKey() ? dailyBest : null
+
   const click = useCallback(() => dispatch({ type: 'CLICK', now: Date.now() }), [])
   const start = useCallback(() => dispatch({ type: 'START' }), [])
   const boomDone = useCallback(() => dispatch({ type: 'BOOM_DONE' }), [])
@@ -219,6 +243,8 @@ export function useGameEngine() {
     comboMult,
     highScore,
     bestLevel,
+    dailyBest: dailyBestToday,
+    dailyOffset: todayLevelIndex(),
     soundOn, setSoundOn,
     hapticOn, setHapticOn,
   }

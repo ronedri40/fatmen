@@ -24,8 +24,8 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 // Draws a 1080×1920 brag card. Returns a Blob (PNG).
-export async function buildShareCard({ level, score, comboPeak, totalClicks, levelDurationMs, isRecord }) {
-  const lv = levelFor(level)
+export async function buildShareCard({ level, score, comboPeak, totalClicks, levelDurationMs, isRecord, dailyOffset = 0 }) {
+  const lv = levelFor(level, dailyOffset)
 
   const canvas = document.createElement('canvas')
   canvas.width = W

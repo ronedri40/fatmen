@@ -19,7 +19,7 @@ function getMouthCenter(ref) {
   return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
 }
 
-export default function GameScreen({ game, audio, haptic }) {
+export default function GameScreen({ game, audio, haptic, speech }) {
   const [foods, setFoods] = useState([])
   const [scorePopups, setScorePopups] = useState([])
   const [bursts, setBursts] = useState([])
@@ -30,7 +30,7 @@ export default function GameScreen({ game, audio, haptic }) {
   const lastBoomRef = useRef(0)
   const [shakeId, setShakeId] = useState(0)
 
-  const levelData = levelFor(game.level)
+  const levelData = levelFor(game.level, game.dailyOffset)
 
   // Tap handler
   const handleTap = useCallback((e) => {
@@ -89,13 +89,18 @@ export default function GameScreen({ game, audio, haptic }) {
     if (game.boomEventId === 0) return
     audio.boom()
     haptic.boom()
+    // Speak the country cry shortly after the boom kick — gives the synth time
+    // to finish so the voice doesn't get muddled by the bass thump.
+    if (levelData.speech) {
+      setTimeout(() => speech?.speak(levelData.speech), 350)
+    }
     setShakeId(s => s + 1)
     const { x, y } = getMouthCenter(mouthRef)
     setBursts(prev => [...prev,
       { id: nid(), x, y, count: 30, color: '#fbbf24', radius: 220, duration: 0.9 },
       { id: nid(), x, y, count: 24, color: '#ef4444', radius: 180, duration: 1.0 },
     ])
-  }, [game.boomEventId, audio, haptic])
+  }, [game.boomEventId, audio, haptic, speech, levelData.speech])
 
   // Hand off after boom animation. We avoid depending on `game` (new object each
   // render) so the timeout doesn't get cancelled mid-flight.
