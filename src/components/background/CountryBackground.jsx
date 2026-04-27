@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 
 // Per-country silhouette decals — drawn with SVG over a vertical gradient.
@@ -222,7 +223,7 @@ const SCENES = {
   ),
 }
 
-export default function CountryBackground({ levelData, fatStage }) {
+function CountryBackgroundImpl({ levelData, fatStage }) {
   const sceneFn = SCENES[levelData.id]
   const [c1, c2, c3] = levelData.sky
   const intensity = (fatStage + 1) / 5
@@ -256,3 +257,10 @@ export default function CountryBackground({ levelData, fatStage }) {
     </div>
   )
 }
+
+// Background only changes on level-up or stage change. Tapping must not re-render
+// it — animated children (sakura, lanterns, confetti) lose phase on remount.
+const CountryBackground = memo(CountryBackgroundImpl, (prev, next) =>
+  prev.levelData === next.levelData && prev.fatStage === next.fatStage
+)
+export default CountryBackground

@@ -8,15 +8,16 @@ export default function Character({ level, fatStage, isBooming, mouthRef, tapEve
   const controls = useAnimation()
   const lastTapRef = useRef(0)
 
-  // Squash on tap
+  // Snappy chomp squash: 12-frame compress → bounce → settle.
+  // Total duration ~120ms so rapid taps still feel responsive at 8+ taps/sec.
   useEffect(() => {
     if (tapEventId === lastTapRef.current) return
     lastTapRef.current = tapEventId
     if (tapEventId === 0) return
     controls.start({
-      scaleX: [1.05, 0.96, 1],
-      scaleY: [0.94, 1.04, 1],
-      transition: { duration: 0.18, ease: 'easeOut' },
+      scaleX: [1, 1.08, 0.96, 1.02, 1],
+      scaleY: [1, 0.9, 1.06, 0.99, 1],
+      transition: { duration: 0.14, ease: [0.34, 1.56, 0.64, 1], times: [0, 0.25, 0.55, 0.8, 1] },
     })
   }, [tapEventId, controls])
 

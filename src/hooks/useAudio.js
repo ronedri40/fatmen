@@ -41,13 +41,41 @@ export function useAudio(enabled = true) {
     osc.stop(t0 + dur + 0.02)
   }, [ensureCtx])
 
-  // Munch / chomp: noisy quick burst
+  // Chomp: a wet, noisy mouth-close. Built from a short pitched-noise burst
+  // through a lowpass filter that closes fast — sounds more "om nom" than the
+  // square-wave blip it replaces. Pitch wobbles up with combo so a streak feels
+  // hungrier and more excited.
   const tap = useCallback((combo = 0) => {
     const ctx = ensureCtx()
     if (!ctx) return
-    const baseFreq = 280 + Math.min(combo, 30) * 18
-    beep({ freq: baseFreq, sweepTo: baseFreq * 0.45, dur: 0.08, type: 'square', vol: 0.07 })
-    beep({ freq: baseFreq * 1.6, sweepTo: baseFreq * 0.7, dur: 0.05, type: 'triangle', vol: 0.05 })
+    const t0 = ctx.currentTime
+    const dur = 0.09
+    const intensity = Math.min(combo, 25) / 25  // 0..1
+
+    // 1. Noise burst — the "chomp" texture
+    const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate)
+    const data = buf.getChannelData(0)
+    for (let i = 0; i < data.length; i++) {
+      const t = i / data.length
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 1.6)
+    }
+    const noise = ctx.createBufferSource()
+    noise.buffer = buf
+    const noiseFilt = ctx.createBiquadFilter()
+    noiseFilt.type = 'lowpass'
+    const startCut = 1600 + intensity * 1200
+    noiseFilt.frequency.setValueAtTime(startCut, t0)
+    noiseFilt.frequency.exponentialRampToValueAtTime(220, t0 + dur)
+    const noiseGain = ctx.createGain()
+    noiseGain.gain.setValueAtTime(0.18 + 0.06 * intensity, t0)
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur)
+    noise.connect(noiseFilt).connect(noiseGain).connect(ctx.destination)
+    noise.start(t0)
+    noise.stop(t0 + dur + 0.02)
+
+    // 2. Tonal "pop" body — gives it pitch so it isn't just hiss
+    const baseFreq = 230 + intensity * 130 + (Math.random() - 0.5) * 40
+    beep({ freq: baseFreq, sweepTo: baseFreq * 0.55, dur: 0.07, type: 'sine', vol: 0.09, attack: 0.002 })
   }, [beep, ensureCtx])
 
   // Stage advance

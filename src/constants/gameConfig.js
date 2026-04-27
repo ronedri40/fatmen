@@ -1,6 +1,14 @@
-// Tuned for satisfying mobile pacing — not the literal 10k clicks of the design doc
-export const CLICKS_PER_STAGE = 25
+// Tuned for satisfying mobile pacing — not the literal 10k clicks of the design doc.
+// First boom should hit within ~15s of pressing TAP TO START so the WOW moment
+// happens before the user can lose interest. Per-stage scaling below makes the
+// first weight-gain in ~3s and the final boom feel earned.
+export const CLICKS_PER_STAGE = 18
 export const LEVEL_MULTIPLIER = 1.35
+
+// Per-stage multipliers applied to CLICKS_PER_STAGE × LEVEL_MULTIPLIER^(level-1).
+// Stage 0 (slim → chubby) is fast for early gratification; stage 4 (very fat → BOOM)
+// is the longest to create tension before payoff.
+export const STAGE_PACING = [0.55, 0.8, 1.0, 1.2, 1.45]
 
 export const FAT_STAGES = [
   { label: 'Slim',      scale: 1.0,  color: '#4ade80', accent: '#22c55e' },

@@ -8,6 +8,7 @@ import {
   DECAY_PER_SECOND,
   DECAY_GRACE_MS,
   LEVEL_MULTIPLIER,
+  STAGE_PACING,
   COMBO_WINDOW_MS,
   COMBO_MAX,
   COMBO_BONUS_THRESHOLD,
@@ -44,8 +45,12 @@ const initialState = {
   levelDurationMs: 0,
 }
 
-function clicksNeeded(level) {
-  return Math.max(8, Math.floor(CLICKS_PER_STAGE * Math.pow(LEVEL_MULTIPLIER, level - 1)))
+// Per-stage clicks: base × level-scaling × stage-pacing curve.
+// The HUD progress bar uses the *current* stage's threshold.
+function clicksNeeded(level, stage = 0) {
+  const base = CLICKS_PER_STAGE * Math.pow(LEVEL_MULTIPLIER, level - 1)
+  const pacing = STAGE_PACING[Math.min(stage, STAGE_PACING.length - 1)] ?? 1
+  return Math.max(5, Math.floor(base * pacing))
 }
 
 function comboMultiplier(combo) {
@@ -70,7 +75,7 @@ function reducer(state, action) {
       const mult = comboMultiplier(newCombo)
       const tapGain = Math.round(POINTS_PER_TAP * mult)
 
-      const needed = clicksNeeded(state.level)
+      const needed = clicksNeeded(state.level, state.fatStage)
       const newStageClicks = state.stageClicks + 1
       const newTotalClicks = state.totalClicks + 1
       let newScore = state.score + tapGain
@@ -168,6 +173,10 @@ export function useGameEngine() {
   const [bestLevel, setBestLevel] = usePersistedState('fatman.bestLevel', 1)
   const [soundOn, setSoundOn] = usePersistedState('fatman.sound', true)
   const [hapticOn, setHapticOn] = usePersistedState('fatman.haptic', true)
+  // Tutorial finger-cue: latches true once the player has tapped 5 times in
+  // their first session. Stays false forever after, so returning players don't
+  // get the cue again.
+  const [tutorialSeen, setTutorialSeen] = usePersistedState('fatman.tutorialSeen', false)
   // dailyBest: { date: 'YYYY-MM-DD', score, durationMs } — only the personal
   // best for *today's* country counts; resets next day.
   const [dailyBest, setDailyBest] = usePersistedState('fatman.dailyBest', null)
@@ -223,6 +232,11 @@ export function useGameEngine() {
   // dailyBest, but only if it's actually for today (yesterday's value is treated as missing)
   const dailyBestToday = dailyBest && dailyBest.date === todayKey() ? dailyBest : null
 
+  // Latch tutorial-seen the first time the player taps enough to "get it".
+  useEffect(() => {
+    if (!tutorialSeen && state.totalClicks >= 5) setTutorialSeen(true)
+  }, [state.totalClicks, tutorialSeen, setTutorialSeen])
+
   const click = useCallback(() => dispatch({ type: 'CLICK', now: Date.now() }), [])
   const start = useCallback(() => dispatch({ type: 'START' }), [])
   const boomDone = useCallback(() => dispatch({ type: 'BOOM_DONE' }), [])
@@ -230,7 +244,7 @@ export function useGameEngine() {
   const restart = useCallback(() => dispatch({ type: 'RESTART' }), [])
   const goHome = useCallback(() => dispatch({ type: 'GO_HOME' }), [])
 
-  const clicksNeededNow = clicksNeeded(state.level)
+  const clicksNeededNow = clicksNeeded(state.level, state.fatStage)
   const stageProgress = Math.min(state.stageClicks / clicksNeededNow, 1)
   const comboMult = comboMultiplier(state.combo)
 
@@ -245,6 +259,7 @@ export function useGameEngine() {
     bestLevel,
     dailyBest: dailyBestToday,
     dailyOffset: todayLevelIndex(),
+    tutorialSeen,
     soundOn, setSoundOn,
     hapticOn, setHapticOn,
   }

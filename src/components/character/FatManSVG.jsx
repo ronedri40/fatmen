@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import Accessories from './Accessories'
 
@@ -69,7 +70,7 @@ export const STAGES = [
     legW:62,legH:44,legSpread:42 },
 ]
 
-export default function FatManSVG({ stage, palette, accessories = [], mouthRef, level = 1 }) {
+function FatManSVGImpl({ stage, palette, accessories = [], mouthRef, level = 1 }) {
   const p = STAGES[Math.min(stage, 4)]
   const skin = palette?.skin || '#FDBCB4'
   const shirt = palette?.shirt || '#3B82F6'
@@ -238,3 +239,15 @@ export default function FatManSVG({ stage, palette, accessories = [], mouthRef, 
     </svg>
   )
 }
+
+// Memoized: stage/palette/accessories/level only change on level-up. The mouthRef
+// is a stable ref. Re-rendering a 30-element motion SVG on every tap is the
+// hottest single thing we can avoid for 60fps tap response.
+const FatManSVG = memo(FatManSVGImpl, (prev, next) =>
+  prev.stage === next.stage &&
+  prev.level === next.level &&
+  prev.palette === next.palette &&
+  prev.accessories === next.accessories &&
+  prev.mouthRef === next.mouthRef
+)
+export default FatManSVG

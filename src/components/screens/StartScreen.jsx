@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { LEVELS } from '../../constants/levels'
 import { useEffect, useState } from 'react'
 import { todayLevel } from '../../utils/dailyChallenge'
+import FatManSVG from '../character/FatManSVG'
 
 function fmtTime(ms) {
   if (!ms) return '—'
@@ -53,30 +54,64 @@ export default function StartScreen({ onStart, highScore, bestLevel, dailyBest, 
         transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
         className="flex flex-col items-center gap-5 z-10 px-8"
       >
-        {/* Showcase emoji */}
-        <div className="relative h-32 w-32 flex items-center justify-center">
+        {/* Hero: a chewing fat-man cycling through countries, with a flying food bite */}
+        <div className="relative w-56 h-52 flex items-center justify-center">
           <motion.div
             className="absolute inset-0 rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(251,146,60,0.5), transparent 70%)' }}
-            animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
-            transition={{ duration: 2, repeat: Infinity }}
+            style={{ background: 'radial-gradient(circle, rgba(251,146,60,0.55), transparent 70%)' }}
+            animate={{ scale: [1, 1.18, 1], opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 2.2, repeat: Infinity }}
           />
           <motion.div
             key={showcase.id}
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            exit={{ scale: 0, rotate: 180 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 18 }}
-            className="text-7xl drop-shadow-[0_8px_24px_rgba(251,146,60,0.55)]"
+            initial={{ scale: 0.5, opacity: 0, y: 30 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 240, damping: 18 }}
+            className="relative w-full"
+            style={{ transformOrigin: '50% 80%' }}
+          >
+            {/* Idle bob + occasional chew squash */}
+            <motion.div
+              animate={{ y: [0, -5, 0] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <motion.div
+                animate={{
+                  scaleX: [1, 1.06, 0.97, 1.02, 1, 1, 1, 1],
+                  scaleY: [1, 0.92, 1.04, 0.99, 1, 1, 1, 1],
+                }}
+                transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', times: [0, 0.06, 0.12, 0.18, 0.24, 0.5, 0.7, 1] }}
+                style={{ transformOrigin: '50% 80%' }}
+              >
+                <FatManSVG
+                  stage={1}
+                  palette={showcase.palette}
+                  accessories={showcase.accessories}
+                  level={showcase.id}
+                />
+              </motion.div>
+            </motion.div>
+          </motion.div>
+
+          {/* Flying food bite that loops into his mouth */}
+          <motion.div
+            key={`food-${showcase.id}`}
+            className="absolute"
+            style={{ fontSize: 32, top: '8%', right: '6%', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.45))' }}
+            initial={{ x: 30, y: -10, opacity: 0, rotate: -30, scale: 1 }}
+            animate={{ x: [-15, -55, -90], y: [-10, 20, 75], opacity: [0, 1, 0], rotate: [-30, 30, 90], scale: [1, 1.1, 0.4] }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
           >
             {showcase.food}
           </motion.div>
+
+          {/* Country flag corner badge */}
           <motion.div
             key={`flag-${showcase.id}`}
-            className="absolute -bottom-2 -right-2 text-3xl drop-shadow-lg"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.15, type: 'spring' }}
+            className="absolute bottom-1 right-2 text-3xl drop-shadow-lg"
+            initial={{ scale: 0, rotate: -20 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ delay: 0.18, type: 'spring' }}
           >
             {showcase.flag}
           </motion.div>
@@ -89,10 +124,9 @@ export default function StartScreen({ onStart, highScore, bestLevel, dailyBest, 
           <p className="text-white/60 text-xs font-black uppercase tracking-[0.4em]">Around the World</p>
         </div>
 
-        <p className="text-white/70 text-sm text-center max-w-xs leading-relaxed">
-          Tap fast to feed him.<br/>
-          Build <span className="text-orange-400 font-bold">combos</span> for bigger scores.<br/>
-          Make him <span className="text-red-400 font-bold">EXPLODE</span> to travel the world.
+        <p className="text-white/85 text-base text-center max-w-xs leading-snug font-bold">
+          He's hungry.<br/>
+          Make him <span className="bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">EXPLODE</span>.
         </p>
 
         {/* Today's challenge */}
@@ -175,7 +209,7 @@ export default function StartScreen({ onStart, highScore, bestLevel, dailyBest, 
             bg-gradient-to-r from-orange-500 to-red-500 border border-white/30
             shadow-2xl"
         >
-          ▶ TAP TO START
+          ▶ FEED HIM
         </motion.button>
 
         {/* Country preview reel */}

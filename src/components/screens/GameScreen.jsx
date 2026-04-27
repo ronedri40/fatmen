@@ -7,6 +7,7 @@ import FlyingFood from '../effects/FlyingFood'
 import FloatingScore from '../effects/FloatingScore'
 import ParticleBurst from '../effects/ParticleBurst'
 import ScreenShake from '../effects/ScreenShake'
+import FingerCue from '../effects/FingerCue'
 import SettingsToggles from '../hud/SettingsToggles'
 import { levelFor } from '../../constants/levels'
 
@@ -139,7 +140,7 @@ export default function GameScreen({ game, audio, haptic, speech }) {
             onHome={game.goHome}
           />
 
-          <div className="flex-1 flex items-end justify-center pb-2">
+          <div className="flex-1 flex items-end justify-center pb-2 relative">
             <Character
               level={game.level}
               fatStage={game.fatStage}
@@ -148,6 +149,7 @@ export default function GameScreen({ game, audio, haptic, speech }) {
               tapEventId={game.tapEventId}
               levelData={levelData}
             />
+            <FingerCue visible={!isBooming && !game.tutorialSeen && game.totalClicks < 3} />
           </div>
 
           {!isBooming && (
@@ -156,11 +158,8 @@ export default function GameScreen({ game, audio, haptic, speech }) {
               animate={{ opacity: [0.4, 0.8, 0.4] }}
               transition={{ repeat: Infinity, duration: 2.2 }}
             >
-              <p className="text-white/70 text-xs font-bold tracking-[0.25em] uppercase drop-shadow">
-                Tap anywhere to feed {levelData.name.split(' ')[0]}
-              </p>
               <p className="text-white/40 text-[10px] tracking-widest">
-                {game.totalClicks.toLocaleString()} bites · combo peak {game.comboPeak}
+                {game.totalClicks.toLocaleString()} bites · peak {game.comboPeak}×
               </p>
             </motion.div>
           )}
