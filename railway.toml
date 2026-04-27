@@ -1,0 +1,12 @@
+# Railway deploy config. Nixpacks auto-detects Vite, so the only thing we need
+# to be explicit about is the start command (vite preview on $PORT) and a
+# health check so failed deploys don't get traffic.
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "npm run start"
+healthcheckPath = "/"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
