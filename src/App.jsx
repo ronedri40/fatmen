@@ -1,18 +1,30 @@
 import { useGameEngine } from './hooks/useGameEngine'
-import StartScreen from './components/StartScreen'
-import GameScreen from './components/GameScreen'
-import LevelUpScreen from './components/LevelUpScreen'
+import { useAudio } from './hooks/useAudio'
+import { useHaptic } from './hooks/useHaptic'
+import StartScreen from './components/screens/StartScreen'
+import GameScreen from './components/screens/GameScreen'
+import LevelUpScreen from './components/screens/LevelUpScreen'
 
 export default function App() {
   const game = useGameEngine()
+  const audio = useAudio(game.soundOn)
+  const haptic = useHaptic(game.hapticOn)
 
   if (game.gameState === game.GAME_STATES.IDLE) {
-    return <StartScreen onStart={game.start} />
+    return <StartScreen onStart={() => { audio.ui(); game.start() }} highScore={game.highScore} bestLevel={game.bestLevel} />
   }
 
   if (game.gameState === game.GAME_STATES.LEVEL_UP) {
-    return <LevelUpScreen level={game.level} score={game.score} onNext={game.nextLevel} onRestart={game.restart} />
+    return (
+      <LevelUpScreen
+        level={game.level}
+        score={game.score}
+        highScore={game.highScore}
+        onNext={() => { audio.levelUp(); game.nextLevel() }}
+        onRestart={() => { audio.ui(); game.restart() }}
+      />
+    )
   }
 
-  return <GameScreen game={game} />
+  return <GameScreen game={game} audio={audio} haptic={haptic} />
 }

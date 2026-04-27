@@ -1,0 +1,144 @@
+import { motion } from 'framer-motion'
+import { LEVELS } from '../../constants/levels'
+import { useEffect, useState } from 'react'
+
+export default function StartScreen({ onStart, highScore, bestLevel }) {
+  // Cycle the showcased flag/food
+  const [idx, setIdx] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % LEVELS.length), 1400)
+    return () => clearInterval(t)
+  }, [])
+  const showcase = LEVELS[idx]
+
+  return (
+    <div
+      className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden cursor-pointer"
+      style={{
+        background: 'radial-gradient(ellipse at 50% 30%, #1f2937 0%, #0a0a0a 70%)',
+      }}
+      onClick={onStart}
+    >
+      {/* Animated background blobs */}
+      <motion.div
+        className="absolute w-[500px] h-[500px] rounded-full blur-3xl"
+        style={{ background: 'radial-gradient(circle, rgba(251,146,60,0.35), transparent 60%)' }}
+        animate={{ x: [-80, 80, -80], y: [-40, 40, -40] }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="absolute w-[400px] h-[400px] rounded-full blur-3xl"
+        style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.25), transparent 60%)' }}
+        animate={{ x: [60, -60, 60], y: [40, -40, 40] }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+      />
+
+      {/* Grid overlay */}
+      <div className="absolute inset-0 opacity-[0.08]" style={{
+        backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
+        backgroundSize: '40px 40px',
+      }}/>
+
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0, y: 30 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
+        className="flex flex-col items-center gap-5 z-10 px-8"
+      >
+        {/* Showcase emoji */}
+        <div className="relative h-32 w-32 flex items-center justify-center">
+          <motion.div
+            className="absolute inset-0 rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(251,146,60,0.5), transparent 70%)' }}
+            animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          />
+          <motion.div
+            key={showcase.id}
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            exit={{ scale: 0, rotate: 180 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+            className="text-7xl drop-shadow-[0_8px_24px_rgba(251,146,60,0.55)]"
+          >
+            {showcase.food}
+          </motion.div>
+          <motion.div
+            key={`flag-${showcase.id}`}
+            className="absolute -bottom-2 -right-2 text-3xl drop-shadow-lg"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.15, type: 'spring' }}
+          >
+            {showcase.flag}
+          </motion.div>
+        </div>
+
+        <div className="flex flex-col items-center gap-1">
+          <h1 className="text-6xl font-black text-white tracking-tighter text-center drop-shadow-2xl">
+            FAT<span className="bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent"> MAN</span>
+          </h1>
+          <p className="text-white/60 text-xs font-black uppercase tracking-[0.4em]">Around the World</p>
+        </div>
+
+        <p className="text-white/70 text-sm text-center max-w-xs leading-relaxed">
+          Tap fast to feed him.<br/>
+          Build <span className="text-orange-400 font-bold">combos</span> for bigger scores.<br/>
+          Make him <span className="text-red-400 font-bold">EXPLODE</span> to travel the world.
+        </p>
+
+        {/* Records */}
+        {(highScore > 0 || bestLevel > 1) && (
+          <div className="flex gap-2">
+            {highScore > 0 && (
+              <div className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
+                <div className="text-[9px] font-black tracking-widest text-white/45 uppercase">Best</div>
+                <div className="text-white font-black">{Math.floor(highScore).toLocaleString()}</div>
+              </div>
+            )}
+            {bestLevel > 1 && (
+              <div className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
+                <div className="text-[9px] font-black tracking-widest text-white/45 uppercase">Lvl</div>
+                <div className="text-white font-black">{bestLevel}</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          animate={{
+            boxShadow: [
+              '0 0 20px rgba(251,146,60,0.4)',
+              '0 0 40px rgba(251,146,60,0.7)',
+              '0 0 20px rgba(251,146,60,0.4)',
+            ],
+          }}
+          transition={{ boxShadow: { duration: 1.6, repeat: Infinity } }}
+          className="mt-2 px-12 py-4 rounded-2xl font-black text-lg text-white tracking-wider
+            bg-gradient-to-r from-orange-500 to-red-500 border border-white/30
+            shadow-2xl"
+        >
+          ▶ TAP TO START
+        </motion.button>
+
+        {/* Country preview reel */}
+        <div className="flex gap-1 mt-2">
+          {LEVELS.map((lv, i) => (
+            <motion.div
+              key={lv.id}
+              animate={{ opacity: i === idx ? 1 : 0.3, scale: i === idx ? 1.2 : 1 }}
+              className="text-base"
+            >
+              {lv.flag}
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
+
+      <p className="absolute bottom-6 text-white/30 text-[10px] tracking-[0.3em] uppercase">
+        Tap anywhere to begin
+      </p>
+    </div>
+  )
+}

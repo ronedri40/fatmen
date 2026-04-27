@@ -1,11 +1,13 @@
 import { motion } from 'framer-motion'
+import Accessories from './Accessories'
 
 const CX = 160
-const T = { duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }
+const T = { duration: 0.55, ease: [0.34, 1.56, 0.64, 1] }
 
-const STAGES = [
-  { skin:'#FDBCB4',shirt:'#3B82F6',pants:'#1E3A5F',hair:'#3D1C02',
-    headR:46,headCY:84,
+// Body geometry per fat-stage, palette-agnostic. The character SVG renders these
+// proportions and the calling code passes a per-country `palette` to color it.
+export const STAGES = [
+  { headR:46,headCY:84,
     eyeY:74,eyeOffX:15,eyeRX:7,eyeRY:8,pupilR:4,
     browY:63,browOffX:14,browLen:14,
     noseY:91,noseRX:5,noseRY:6,
@@ -17,8 +19,7 @@ const STAGES = [
     bellyRX:0,bellyRY:0,bellyOp:0,bellyY:302,
     armSX:50,armSY:214,armEX:32,armEY:280,armW:22,
     legW:24,legH:68,legSpread:18 },
-  { skin:'#FDBCB4',shirt:'#22C55E',pants:'#14532D',hair:'#3D1C02',
-    headR:53,headCY:87,
+  { headR:53,headCY:87,
     eyeY:77,eyeOffX:17,eyeRX:7,eyeRY:7.5,pupilR:4,
     browY:66,browOffX:16,browLen:16,
     noseY:94,noseRX:6,noseRY:7,
@@ -30,8 +31,7 @@ const STAGES = [
     bellyRX:55,bellyRY:16,bellyOp:0.7,bellyY:334,
     armSX:72,armSY:232,armEX:46,armEY:296,armW:28,
     legW:30,legH:66,legSpread:22 },
-  { skin:'#F9A678',shirt:'#EAB308',pants:'#713F12',hair:'#2D1500',
-    headR:62,headCY:91,
+  { headR:62,headCY:91,
     eyeY:82,eyeOffX:20,eyeRX:7,eyeRY:7,pupilR:4,
     browY:71,browOffX:19,browLen:18,
     noseY:100,noseRX:7,noseRY:8,
@@ -43,8 +43,7 @@ const STAGES = [
     bellyRX:82,bellyRY:24,bellyOp:1,bellyY:360,
     armSX:98,armSY:248,armEX:60,armEY:308,armW:36,
     legW:38,legH:62,legSpread:28 },
-  { skin:'#F07C56',shirt:'#F97316',pants:'#7C2D12',hair:'#1A0A00',
-    headR:72,headCY:96,
+  { headR:72,headCY:96,
     eyeY:88,eyeOffX:23,eyeRX:7,eyeRY:6,pupilR:3.5,
     browY:77,browOffX:22,browLen:20,
     noseY:108,noseRX:9,noseRY:10,
@@ -56,8 +55,7 @@ const STAGES = [
     bellyRX:112,bellyRY:32,bellyOp:1,bellyY:384,
     armSX:122,armSY:264,armEX:72,armEY:320,armW:46,
     legW:48,legH:56,legSpread:34 },
-  { skin:'#E05A30',shirt:'#EF4444',pants:'#7F1D1D',hair:'#0D0500',
-    headR:82,headCY:101,
+  { headR:82,headCY:101,
     eyeY:93,eyeOffX:27,eyeRX:7,eyeRY:5,pupilR:3,
     browY:83,browOffX:26,browLen:23,
     noseY:117,noseRX:11,noseRY:12,
@@ -71,20 +69,24 @@ const STAGES = [
     legW:62,legH:44,legSpread:42 },
 ]
 
-export default function FatManSVG({ stage, mouthRef }) {
+export default function FatManSVG({ stage, palette, accessories = [], mouthRef, level = 1 }) {
   const p = STAGES[Math.min(stage, 4)]
+  const skin = palette?.skin || '#FDBCB4'
+  const shirt = palette?.shirt || '#3B82F6'
+  const stripe = palette?.stripe
+  const pants = palette?.pants || '#1E3A5F'
+  const hair = palette?.hair || '#3D1C02'
 
-  // Leg positions
   const legTop = p.bodyCY + p.bodyRY - 10
   const leftLegX = CX - p.legSpread - p.legW / 2
   const rightLegX = CX + p.legSpread - p.legW / 2
 
-  // Arm paths
   const leftArmPath  = `M ${CX - p.armSX} ${p.armSY} Q ${CX - p.armSX - 20} ${(p.armSY + p.armEY)/2} ${CX - p.armEX} ${p.armEY}`
   const rightArmPath = `M ${CX + p.armSX} ${p.armSY} Q ${CX + p.armSX + 20} ${(p.armSY + p.armEY)/2} ${CX + p.armEX} ${p.armEY}`
-
-  // Teeth count based on mouth size
   const teethCount = Math.round(p.mouthRX / 5)
+
+  const gradId = `g-${level}-${stage}`
+  const showHair = !accessories.includes('turban') && !accessories.includes('ushanka') && !accessories.includes('sombrero')
 
   return (
     <svg
@@ -92,148 +94,120 @@ export default function FatManSVG({ stage, mouthRef }) {
       style={{ width: '100%', maxWidth: 280, height: 'auto', overflow: 'visible' }}
     >
       <defs>
-        <radialGradient id={`skinGrad${stage}`} cx="35%" cy="30%" r="65%">
+        <radialGradient id={`skinGrad${gradId}`} cx="35%" cy="30%" r="65%">
           <stop offset="0%" stopColor="#fff" stopOpacity="0.35" />
-          <stop offset="100%" stopColor={p.skin} stopOpacity="0" />
+          <stop offset="100%" stopColor={skin} stopOpacity="0" />
         </radialGradient>
-        <radialGradient id={`shirtGrad${stage}`} cx="40%" cy="25%" r="70%">
+        <radialGradient id={`shirtGrad${gradId}`} cx="40%" cy="25%" r="70%">
           <stop offset="0%" stopColor="#fff" stopOpacity="0.25" />
-          <stop offset="100%" stopColor={p.shirt} stopOpacity="0" />
+          <stop offset="100%" stopColor={shirt} stopOpacity="0" />
         </radialGradient>
-        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.3" />
+        <filter id="char-shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.35" />
         </filter>
       </defs>
 
-      {/* ── PANTS / LEGS ── */}
-      <motion.rect animate={{ x: leftLegX,  y: legTop, width: p.legW, height: p.legH, rx: p.legW/2 }} transition={T} fill={p.pants} />
-      <motion.rect animate={{ x: rightLegX, y: legTop, width: p.legW, height: p.legH, rx: p.legW/2 }} transition={T} fill={p.pants} />
-      {/* Shoes */}
+      {/* shadow under feet */}
+      <ellipse cx={CX} cy={legTop + p.legH + 14} rx={p.bodyRX * 0.9} ry={6} fill="#000" opacity={0.35} />
+
+      {/* legs / pants */}
+      <motion.rect animate={{ x: leftLegX,  y: legTop, width: p.legW, height: p.legH, rx: p.legW/2 }} transition={T} fill={pants} />
+      <motion.rect animate={{ x: rightLegX, y: legTop, width: p.legW, height: p.legH, rx: p.legW/2 }} transition={T} fill={pants} />
       <motion.ellipse animate={{ cx: leftLegX  + p.legW/2, cy: legTop + p.legH + 6, rx: p.legW*0.7, ry: 8 }} transition={T} fill="#111" />
       <motion.ellipse animate={{ cx: rightLegX + p.legW/2, cy: legTop + p.legH + 6, rx: p.legW*0.7, ry: 8 }} transition={T} fill="#111" />
 
-      {/* ── BODY / SHIRT ── */}
-      <motion.ellipse animate={{ cx: CX, cy: p.bodyCY, rx: p.bodyRX, ry: p.bodyRY }} transition={T} fill={p.shirt} filter="url(#shadow)" />
-      {/* Shirt shine */}
-      <motion.ellipse animate={{ cx: CX, cy: p.bodyCY, rx: p.bodyRX, ry: p.bodyRY }} transition={T} fill={`url(#shirtGrad${stage})`} />
-      {/* Belly bulge for fatter stages */}
-      <motion.ellipse animate={{ cx: CX, cy: p.bellyY, rx: p.bellyRX, ry: p.bellyRY, opacity: p.bellyOp }} transition={T} fill={p.shirt} />
-      {/* Shirt collar */}
-      <motion.polygon
-        animate={{
-          points: `${CX},${p.bodyCY - p.bodyRY + 12} ${CX - 14},${p.bodyCY - p.bodyRY + 30} ${CX + 14},${p.bodyCY - p.bodyRY + 30}`
-        }}
-        transition={T}
-        fill="white"
-        opacity={0.9}
-      />
-      {/* Belt */}
-      <motion.rect
-        animate={{ x: CX - p.bodyRX * 0.7, y: p.bodyCY + p.bodyRY * 0.35, width: p.bodyRX * 1.4, height: 12, rx: 6 }}
-        transition={T}
-        fill={p.pants}
-        opacity={0.8}
-      />
-      {/* Belt buckle */}
-      <motion.rect
-        animate={{ x: CX - 8, y: p.bodyCY + p.bodyRY * 0.35 - 1, width: 16, height: 14, rx: 3 }}
-        transition={T}
-        fill="#c0a020"
-      />
+      {/* body / shirt */}
+      <motion.ellipse animate={{ cx: CX, cy: p.bodyCY, rx: p.bodyRX, ry: p.bodyRY }} transition={T} fill={shirt} filter="url(#char-shadow)" />
+      <motion.ellipse animate={{ cx: CX, cy: p.bodyCY, rx: p.bodyRX, ry: p.bodyRY }} transition={T} fill={`url(#shirtGrad${gradId})`} />
+      {/* belly bulge */}
+      <motion.ellipse animate={{ cx: CX, cy: p.bellyY, rx: p.bellyRX, ry: p.bellyRY, opacity: p.bellyOp }} transition={T} fill={shirt} />
 
-      {/* ── ARMS ── */}
-      <motion.path animate={{ d: leftArmPath  }} transition={T} stroke={p.skin} strokeWidth={p.armW} strokeLinecap="round" fill="none" />
-      <motion.path animate={{ d: rightArmPath }} transition={T} stroke={p.skin} strokeWidth={p.armW} strokeLinecap="round" fill="none" />
-      {/* Hands */}
-      <motion.circle animate={{ cx: CX - p.armEX, cy: p.armEY, r: p.armW * 0.55 }} transition={T} fill={p.skin} />
-      <motion.circle animate={{ cx: CX + p.armEX, cy: p.armEY, r: p.armW * 0.55 }} transition={T} fill={p.skin} />
+      {/* horizontal stripes (France) */}
+      {stripe && [-0.45, -0.15, 0.15, 0.45].map((t, i) => (
+        <motion.ellipse
+          key={i}
+          animate={{ cx: CX, cy: p.bodyCY + p.bodyRY * t, rx: p.bodyRX * Math.sqrt(1 - t*t) - 1, ry: 6 }}
+          transition={T}
+          fill={stripe}
+          opacity={0.85}
+        />
+      ))}
 
-      {/* ── NECK ── */}
+      {/* arms */}
+      <motion.path animate={{ d: leftArmPath  }} transition={T} stroke={skin} strokeWidth={p.armW} strokeLinecap="round" fill="none" />
+      <motion.path animate={{ d: rightArmPath }} transition={T} stroke={skin} strokeWidth={p.armW} strokeLinecap="round" fill="none" />
+      <motion.circle animate={{ cx: CX - p.armEX, cy: p.armEY, r: p.armW * 0.55 }} transition={T} fill={skin} />
+      <motion.circle animate={{ cx: CX + p.armEX, cy: p.armEY, r: p.armW * 0.55 }} transition={T} fill={skin} />
+
+      {/* neck */}
       <motion.rect
         animate={{ x: CX - p.neckW/2, y: p.neckTop, width: p.neckW, height: p.neckBot - p.neckTop, rx: p.neckW/2 }}
         transition={T}
-        fill={p.skin}
+        fill={skin}
       />
 
-      {/* ── DOUBLE CHIN ── */}
+      {/* double chin */}
       <motion.ellipse
         animate={{ cx: CX, cy: p.neckTop + 4, rx: p.chinRX, ry: p.chinRY, opacity: p.chinOp }}
         transition={T}
-        fill={p.skin}
+        fill={skin}
       />
 
-      {/* ── HEAD ── */}
-      {/* Hair cap (drawn before head so head overlaps bottom of hair) */}
-      <motion.ellipse
-        animate={{ cx: CX, cy: p.headCY - p.headR * 0.25, rx: p.headR + 5, ry: p.headR * 0.85, opacity: 1 }}
-        transition={T}
-        fill={p.hair}
-      />
-      {/* Head circle */}
-      <motion.circle animate={{ cx: CX, cy: p.headCY, r: p.headR }} transition={T} fill={p.skin} filter="url(#shadow)" />
-      {/* Skin shine */}
-      <motion.circle animate={{ cx: CX, cy: p.headCY, r: p.headR }} transition={T} fill={`url(#skinGrad${stage})`} />
+      {/* hair cap */}
+      {showHair && (
+        <motion.ellipse
+          animate={{ cx: CX, cy: p.headCY - p.headR * 0.25, rx: p.headR + 5, ry: p.headR * 0.85, opacity: 1 }}
+          transition={T}
+          fill={hair}
+        />
+      )}
 
-      {/* Ears */}
-      <motion.ellipse animate={{ cx: CX - p.headR + 2, cy: p.headCY + 4, rx: 10, ry: 13 }} transition={T} fill={p.skin} />
-      <motion.ellipse animate={{ cx: CX + p.headR - 2, cy: p.headCY + 4, rx: 10, ry: 13 }} transition={T} fill={p.skin} />
-      <motion.ellipse animate={{ cx: CX - p.headR + 4, cy: p.headCY + 4, rx: 5, ry: 8 }} transition={T} fill="#e09090" opacity={0.5} />
-      <motion.ellipse animate={{ cx: CX + p.headR - 4, cy: p.headCY + 4, rx: 5, ry: 8 }} transition={T} fill="#e09090" opacity={0.5} />
+      {/* head */}
+      <motion.circle animate={{ cx: CX, cy: p.headCY, r: p.headR }} transition={T} fill={skin} filter="url(#char-shadow)" />
+      <motion.circle animate={{ cx: CX, cy: p.headCY, r: p.headR }} transition={T} fill={`url(#skinGrad${gradId})`} />
 
-      {/* Cheeks */}
+      {/* ears */}
+      <motion.ellipse animate={{ cx: CX - p.headR + 2, cy: p.headCY + 4, rx: 10, ry: 13 }} transition={T} fill={skin} />
+      <motion.ellipse animate={{ cx: CX + p.headR - 2, cy: p.headCY + 4, rx: 10, ry: 13 }} transition={T} fill={skin} />
+
+      {/* cheeks */}
       <motion.ellipse animate={{ cx: CX - p.cheekOffX, cy: p.cheekY, rx: p.cheekRX, ry: p.cheekRY, opacity: p.cheekOp }} transition={T} fill="#ff8080" />
       <motion.ellipse animate={{ cx: CX + p.cheekOffX, cy: p.cheekY, rx: p.cheekRX, ry: p.cheekRY, opacity: p.cheekOp }} transition={T} fill="#ff8080" />
 
-      {/* ── EYEBROWS ── */}
+      {/* eyebrows */}
       <motion.path
         animate={{ d: `M ${CX - p.browOffX - p.browLen/2} ${p.browY} Q ${CX - p.browOffX} ${p.browY - 5} ${CX - p.browOffX + p.browLen/2} ${p.browY}` }}
-        transition={T}
-        stroke="#4a2800"
-        strokeWidth={3.5}
-        strokeLinecap="round"
-        fill="none"
+        transition={T} stroke="#3a1c00" strokeWidth={3.5} strokeLinecap="round" fill="none"
       />
       <motion.path
         animate={{ d: `M ${CX + p.browOffX - p.browLen/2} ${p.browY} Q ${CX + p.browOffX} ${p.browY - 5} ${CX + p.browOffX + p.browLen/2} ${p.browY}` }}
-        transition={T}
-        stroke="#4a2800"
-        strokeWidth={3.5}
-        strokeLinecap="round"
-        fill="none"
+        transition={T} stroke="#3a1c00" strokeWidth={3.5} strokeLinecap="round" fill="none"
       />
 
-      {/* ── EYES ── */}
-      {/* Whites */}
+      {/* eyes */}
       <motion.ellipse animate={{ cx: CX - p.eyeOffX, cy: p.eyeY, rx: p.eyeRX, ry: p.eyeRY }} transition={T} fill="white" />
       <motion.ellipse animate={{ cx: CX + p.eyeOffX, cy: p.eyeY, rx: p.eyeRX, ry: p.eyeRY }} transition={T} fill="white" />
-      {/* Iris */}
       <motion.circle animate={{ cx: CX - p.eyeOffX, cy: p.eyeY + 1, r: p.pupilR + 1.5 }} transition={T} fill="#5a3010" />
       <motion.circle animate={{ cx: CX + p.eyeOffX, cy: p.eyeY + 1, r: p.pupilR + 1.5 }} transition={T} fill="#5a3010" />
-      {/* Pupils */}
       <motion.circle animate={{ cx: CX - p.eyeOffX, cy: p.eyeY + 1, r: p.pupilR }} transition={T} fill="#111" />
       <motion.circle animate={{ cx: CX + p.eyeOffX, cy: p.eyeY + 1, r: p.pupilR }} transition={T} fill="#111" />
-      {/* Eye highlights */}
       <motion.circle animate={{ cx: CX - p.eyeOffX + 2, cy: p.eyeY - 2, r: 1.5 }} transition={T} fill="white" />
       <motion.circle animate={{ cx: CX + p.eyeOffX + 2, cy: p.eyeY - 2, r: 1.5 }} transition={T} fill="white" />
 
-      {/* ── NOSE ── */}
-      <motion.ellipse animate={{ cx: CX - p.noseRX * 0.6, cy: p.noseY, rx: p.noseRX * 0.55, ry: p.noseRY * 0.5 }} transition={T} fill="#c0706a" opacity={0.6} />
-      <motion.ellipse animate={{ cx: CX + p.noseRX * 0.6, cy: p.noseY, rx: p.noseRX * 0.55, ry: p.noseRY * 0.5 }} transition={T} fill="#c0706a" opacity={0.6} />
-      <motion.ellipse animate={{ cx: CX, cy: p.noseY - 2, rx: p.noseRX, ry: p.noseRY }} transition={T} fill={p.skin} />
+      {/* nose */}
+      <motion.ellipse animate={{ cx: CX, cy: p.noseY - 2, rx: p.noseRX, ry: p.noseRY }} transition={T} fill={skin} />
       <motion.ellipse animate={{ cx: CX - p.noseRX * 0.6, cy: p.noseY, rx: p.noseRX * 0.45, ry: p.noseRY * 0.4 }} transition={T} fill="#a05050" opacity={0.5} />
       <motion.ellipse animate={{ cx: CX + p.noseRX * 0.6, cy: p.noseY, rx: p.noseRX * 0.45, ry: p.noseRY * 0.4 }} transition={T} fill="#a05050" opacity={0.5} />
 
-      {/* ── OPEN MOUTH ── */}
+      {/* country accessories drawn between face and mouth so hat sits on top */}
+      <Accessories accessories={accessories} stage={stage} CX={CX} p={p} palette={palette} />
+
+      {/* open mouth (refed for tap-target alignment) */}
       <g ref={mouthRef}>
-        {/* Mouth shadow / outer lip */}
         <motion.ellipse animate={{ cx: CX, cy: p.mouthY + 1, rx: p.mouthRX + 2, ry: p.mouthRY + 2 }} transition={T} fill="#8B3A3A" />
-        {/* Mouth cavity */}
         <motion.ellipse animate={{ cx: CX, cy: p.mouthY, rx: p.mouthRX, ry: p.mouthRY }} transition={T} fill="#2a0000" />
-        {/* Tongue */}
         <motion.ellipse animate={{ cx: CX, cy: p.mouthY + p.mouthRY * 0.4, rx: p.mouthRX * 0.65, ry: p.mouthRY * 0.6 }} transition={T} fill="#e0546a" />
-        {/* Tongue highlight */}
         <motion.ellipse animate={{ cx: CX, cy: p.mouthY + p.mouthRY * 0.3, rx: p.mouthRX * 0.25, ry: p.mouthRY * 0.2 }} transition={T} fill="#f0708a" opacity={0.6} />
-        {/* Upper teeth */}
         {Array.from({ length: Math.max(teethCount, 3) }).map((_, i) => {
           const totalTeeth = Math.max(teethCount, 3)
           const toothW = (p.mouthRX * 2 * 0.9) / totalTeeth
@@ -241,23 +215,16 @@ export default function FatManSVG({ stage, mouthRef }) {
           return (
             <motion.rect
               key={i}
-              animate={{
-                x: startX + 1,
-                y: p.mouthY - p.mouthRY,
-                width: toothW - 2,
-                height: p.mouthRY * 0.65,
-                rx: 2,
-              }}
+              animate={{ x: startX + 1, y: p.mouthY - p.mouthRY, width: toothW - 2, height: p.mouthRY * 0.65, rx: 2 }}
               transition={T}
               fill="white"
             />
           )
         })}
-        {/* Saliva glint */}
         <motion.circle animate={{ cx: CX + p.mouthRX * 0.5, cy: p.mouthY + p.mouthRY * 0.5, r: 2.5 }} transition={T} fill="white" opacity={0.7} />
       </g>
 
-      {/* ── SWEAT (stages 3-4) ── */}
+      {/* sweat for fatter stages */}
       {stage >= 3 && (
         <>
           <motion.ellipse cx={CX - p.headR + 8} cy={p.headCY - p.headR * 0.3}
