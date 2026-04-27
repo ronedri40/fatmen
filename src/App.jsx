@@ -20,8 +20,12 @@ export default function App() {
         level={game.level}
         score={game.score}
         highScore={game.highScore}
+        comboPeak={game.comboPeak}
+        totalClicks={game.totalClicks}
+        levelDurationMs={game.levelDurationMs}
         onNext={() => { audio.levelUp(); game.nextLevel() }}
         onRestart={() => { audio.ui(); game.restart() }}
+        onSound={audio.ui}
       />
     )
   }

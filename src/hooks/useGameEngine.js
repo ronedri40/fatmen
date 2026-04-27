@@ -38,6 +38,9 @@ const initialState = {
   boomEventId: 0,
   // pop-ups: last gained score (for floating "+10" rendering)
   lastTapGain: 0,
+  // per-level session timing for the shareable result card
+  levelStartTime: null,
+  levelDurationMs: 0,
 }
 
 function clicksNeeded(level) {
@@ -53,8 +56,10 @@ function comboMultiplier(combo) {
 
 function reducer(state, action) {
   switch (action.type) {
-    case 'START':
-      return { ...initialState, gameState: GAME_STATES.PLAYING, lastClickTime: Date.now() }
+    case 'START': {
+      const now = Date.now()
+      return { ...initialState, gameState: GAME_STATES.PLAYING, lastClickTime: now, levelStartTime: now }
+    }
 
     case 'CLICK': {
       if (state.gameState !== GAME_STATES.PLAYING) return state
@@ -75,6 +80,7 @@ function reducer(state, action) {
       let gameState = state.gameState
       let boomEventId = state.boomEventId
 
+      let levelDurationMs = state.levelDurationMs
       if (newStageClicks >= needed) {
         const nextStage = state.fatStage + 1
         if (nextStage >= TOTAL_STAGES) {
@@ -84,6 +90,7 @@ function reducer(state, action) {
           fatStage = TOTAL_STAGES - 1
           stageClicks = needed
           boomEventId = state.boomEventId + 1
+          levelDurationMs = state.levelStartTime ? now - state.levelStartTime : 0
         } else {
           newScore += STAGE_BONUS
           fatStage = nextStage
@@ -106,6 +113,7 @@ function reducer(state, action) {
         stageEventId,
         boomEventId,
         lastTapGain: tapGain,
+        levelDurationMs,
       }
     }
 
@@ -123,7 +131,8 @@ function reducer(state, action) {
     case 'BOOM_DONE':
       return { ...state, gameState: GAME_STATES.LEVEL_UP }
 
-    case 'NEXT_LEVEL':
+    case 'NEXT_LEVEL': {
+      const now = Date.now()
       return {
         ...state,
         gameState: GAME_STATES.PLAYING,
@@ -131,11 +140,16 @@ function reducer(state, action) {
         stageClicks: 0,
         level: state.level + 1,
         combo: 0,
-        lastClickTime: Date.now(),
+        lastClickTime: now,
+        levelStartTime: now,
+        levelDurationMs: 0,
       }
+    }
 
-    case 'RESTART':
-      return { ...initialState, gameState: GAME_STATES.PLAYING, lastClickTime: Date.now() }
+    case 'RESTART': {
+      const now = Date.now()
+      return { ...initialState, gameState: GAME_STATES.PLAYING, lastClickTime: now, levelStartTime: now }
+    }
 
     case 'GO_HOME':
       return { ...initialState }

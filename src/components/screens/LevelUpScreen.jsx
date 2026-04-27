@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion'
 import { levelFor } from '../../constants/levels'
 import Confetti from '../effects/Confetti'
+import ShareButton from './ShareButton'
 
-export default function LevelUpScreen({ level, score, highScore, onNext, onRestart }) {
+export default function LevelUpScreen({ level, score, highScore, comboPeak, totalClicks, levelDurationMs, onNext, onRestart, onSound }) {
   const cleared = levelFor(level)
   const next = levelFor(level + 1)
-  const isRecord = score >= highScore
+  const isRecord = score >= highScore && score > 0
 
   return (
     <div
@@ -107,6 +108,10 @@ export default function LevelUpScreen({ level, score, highScore, onNext, onResta
           >
             FLY TO {next.country.toUpperCase()} →
           </motion.button>
+          <ShareButton
+            stats={{ level, score, comboPeak, totalClicks, levelDurationMs, isRecord }}
+            onSound={onSound}
+          />
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={onRestart}
