@@ -119,10 +119,33 @@ export function useAudio(enabled = true) {
     )
   }, [beep])
 
+  // Burp — low sawtooth sweep down, very satisfying/funny for stage advances
+  const burp = useCallback(() => {
+    const ctx = ensureCtx()
+    if (!ctx) return
+    const t0 = ctx.currentTime
+    const osc = ctx.createOscillator()
+    const filter = ctx.createBiquadFilter()
+    const gain = ctx.createGain()
+    filter.type = 'lowpass'
+    filter.frequency.value = 600
+    osc.type = 'sawtooth'
+    osc.frequency.setValueAtTime(140, t0)
+    osc.frequency.exponentialRampToValueAtTime(45, t0 + 0.35)
+    gain.gain.setValueAtTime(0.28, t0)
+    gain.gain.linearRampToValueAtTime(0.32, t0 + 0.05)
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.4)
+    osc.connect(filter).connect(gain).connect(ctx.destination)
+    osc.start(t0)
+    osc.stop(t0 + 0.42)
+    // Little tonal squeak at the end
+    setTimeout(() => beep({ freq: 800, sweepTo: 500, dur: 0.08, type: 'sine', vol: 0.07 }), 280)
+  }, [beep, ensureCtx])
+
   // UI click
   const ui = useCallback(() => {
     beep({ freq: 660, sweepTo: 880, dur: 0.06, type: 'triangle', vol: 0.1 })
   }, [beep])
 
-  return { tap, pop, boom, levelUp, ui }
+  return { tap, pop, burp, boom, levelUp, ui }
 }

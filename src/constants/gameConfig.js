@@ -2,8 +2,8 @@
 // First boom should hit within ~15s of pressing TAP TO START so the WOW moment
 // happens before the user can lose interest. Per-stage scaling below makes the
 // first weight-gain in ~3s and the final boom feel earned.
-export const CLICKS_PER_STAGE = 18
-export const LEVEL_MULTIPLIER = 1.35
+export const CLICKS_PER_STAGE = 50
+export const LEVEL_MULTIPLIER = 1.5
 
 // Per-stage multipliers applied to CLICKS_PER_STAGE × LEVEL_MULTIPLIER^(level-1).
 // Stage 0 (slim → chubby) is fast for early gratification; stage 4 (very fat → BOOM)

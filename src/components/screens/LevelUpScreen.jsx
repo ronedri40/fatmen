@@ -3,10 +3,19 @@ import { levelFor } from '../../constants/levels'
 import Confetti from '../effects/Confetti'
 import ShareButton from './ShareButton'
 
+function calcStars(durationMs, level) {
+  if (!durationMs || durationMs <= 0) return 1
+  const base = 22000 * Math.pow(1.25, level - 1)
+  if (durationMs < base * 0.6) return 3
+  if (durationMs < base * 1.3) return 2
+  return 1
+}
+
 export default function LevelUpScreen({ level, score, highScore, comboPeak, totalClicks, levelDurationMs, dailyOffset, onNext, onRestart, onSound }) {
   const cleared = levelFor(level, dailyOffset)
   const next = levelFor(level + 1, dailyOffset)
   const isRecord = score >= highScore && score > 0
+  const stars = calcStars(levelDurationMs, level)
 
   return (
     <div
@@ -42,6 +51,25 @@ export default function LevelUpScreen({ level, score, highScore, comboPeak, tota
         >
           💥
         </motion.div>
+
+        {/* Star rating */}
+        <div className="flex gap-3 items-center">
+          {[1, 2, 3].map(s => (
+            <motion.div
+              key={s}
+              initial={{ scale: 0, rotate: -45 }}
+              animate={{ scale: s <= stars ? 1 : 0.45, rotate: 0 }}
+              transition={{ delay: 0.3 + s * 0.18, type: 'spring', stiffness: 350, damping: 12 }}
+              style={{
+                fontSize: 44,
+                filter: s <= stars ? 'drop-shadow(0 0 12px gold)' : 'grayscale(1)',
+                opacity: s <= stars ? 1 : 0.25,
+              }}
+            >
+              ⭐
+            </motion.div>
+          ))}
+        </div>
 
         {/* Cry */}
         <motion.div

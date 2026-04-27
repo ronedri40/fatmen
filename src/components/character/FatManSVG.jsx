@@ -3,10 +3,7 @@ import { motion } from 'framer-motion'
 import Accessories from './Accessories'
 
 const CX = 160
-const T = { duration: 0.55, ease: [0.34, 1.56, 0.64, 1] }
 
-// Body geometry per fat-stage, palette-agnostic. The character SVG renders these
-// proportions and the calling code passes a per-country `palette` to color it.
 export const STAGES = [
   { headR:46,headCY:84,
     eyeY:74,eyeOffX:15,eyeRX:7,eyeRY:8,pupilR:4,
@@ -70,8 +67,26 @@ export const STAGES = [
     legW:62,legH:44,legSpread:42 },
 ]
 
+function lerp(a, b, t) { return a + (b - a) * t }
+
+function interpolateStage(stageFloat) {
+  const clamped = Math.max(0, Math.min(stageFloat, STAGES.length - 1))
+  const floor = Math.floor(clamped)
+  const frac = clamped - floor
+  const sA = STAGES[floor]
+  const sB = STAGES[Math.min(floor + 1, STAGES.length - 1)]
+  const p = {}
+  for (const key of Object.keys(sA)) {
+    p[key] = lerp(sA[key], sB[key], frac)
+  }
+  return p
+}
+
 function FatManSVGImpl({ stage, palette, accessories = [], mouthRef, level = 1 }) {
-  const p = STAGES[Math.min(stage, 4)]
+  const stageFloat = typeof stage === 'number' ? stage : Math.floor(stage)
+  const p = interpolateStage(stageFloat)
+  const intStage = Math.floor(stageFloat)
+
   const skin = palette?.skin || '#FDBCB4'
   const shirt = palette?.shirt || '#3B82F6'
   const stripe = palette?.stripe
@@ -86,7 +101,7 @@ function FatManSVGImpl({ stage, palette, accessories = [], mouthRef, level = 1 }
   const rightArmPath = `M ${CX + p.armSX} ${p.armSY} Q ${CX + p.armSX + 20} ${(p.armSY + p.armEY)/2} ${CX + p.armEX} ${p.armEY}`
   const teethCount = Math.round(p.mouthRX / 5)
 
-  const gradId = `g-${level}-${stage}`
+  const gradId = `g-${level}-${intStage}`
   const showHair = !accessories.includes('turban') && !accessories.includes('ushanka') && !accessories.includes('sombrero')
 
   return (
@@ -108,125 +123,94 @@ function FatManSVGImpl({ stage, palette, accessories = [], mouthRef, level = 1 }
         </filter>
       </defs>
 
-      {/* shadow under feet */}
       <ellipse cx={CX} cy={legTop + p.legH + 14} rx={p.bodyRX * 0.9} ry={6} fill="#000" opacity={0.35} />
 
-      {/* legs / pants */}
-      <motion.rect animate={{ x: leftLegX,  y: legTop, width: p.legW, height: p.legH, rx: p.legW/2 }} transition={T} fill={pants} />
-      <motion.rect animate={{ x: rightLegX, y: legTop, width: p.legW, height: p.legH, rx: p.legW/2 }} transition={T} fill={pants} />
-      <motion.ellipse animate={{ cx: leftLegX  + p.legW/2, cy: legTop + p.legH + 6, rx: p.legW*0.7, ry: 8 }} transition={T} fill="#111" />
-      <motion.ellipse animate={{ cx: rightLegX + p.legW/2, cy: legTop + p.legH + 6, rx: p.legW*0.7, ry: 8 }} transition={T} fill="#111" />
+      <rect x={leftLegX}  y={legTop} width={p.legW} height={p.legH} rx={p.legW/2} fill={pants} />
+      <rect x={rightLegX} y={legTop} width={p.legW} height={p.legH} rx={p.legW/2} fill={pants} />
+      <ellipse cx={leftLegX  + p.legW/2} cy={legTop + p.legH + 6} rx={p.legW*0.7} ry={8} fill="#111" />
+      <ellipse cx={rightLegX + p.legW/2} cy={legTop + p.legH + 6} rx={p.legW*0.7} ry={8} fill="#111" />
 
-      {/* body / shirt */}
-      <motion.ellipse animate={{ cx: CX, cy: p.bodyCY, rx: p.bodyRX, ry: p.bodyRY }} transition={T} fill={shirt} filter="url(#char-shadow)" />
-      <motion.ellipse animate={{ cx: CX, cy: p.bodyCY, rx: p.bodyRX, ry: p.bodyRY }} transition={T} fill={`url(#shirtGrad${gradId})`} />
-      {/* belly bulge */}
-      <motion.ellipse animate={{ cx: CX, cy: p.bellyY, rx: p.bellyRX, ry: p.bellyRY, opacity: p.bellyOp }} transition={T} fill={shirt} />
+      <ellipse cx={CX} cy={p.bodyCY} rx={p.bodyRX} ry={p.bodyRY} fill={shirt} filter="url(#char-shadow)" />
+      <ellipse cx={CX} cy={p.bodyCY} rx={p.bodyRX} ry={p.bodyRY} fill={`url(#shirtGrad${gradId})`} />
+      <ellipse cx={CX} cy={p.bellyY} rx={p.bellyRX} ry={p.bellyRY} opacity={p.bellyOp} fill={shirt} />
 
-      {/* horizontal stripes (France) */}
       {stripe && [-0.45, -0.15, 0.15, 0.45].map((t, i) => (
-        <motion.ellipse
+        <ellipse
           key={i}
-          animate={{ cx: CX, cy: p.bodyCY + p.bodyRY * t, rx: p.bodyRX * Math.sqrt(1 - t*t) - 1, ry: 6 }}
-          transition={T}
-          fill={stripe}
-          opacity={0.85}
+          cx={CX} cy={p.bodyCY + p.bodyRY * t}
+          rx={p.bodyRX * Math.sqrt(Math.max(0, 1 - t*t)) - 1} ry={6}
+          fill={stripe} opacity={0.85}
         />
       ))}
 
-      {/* arms */}
-      <motion.path animate={{ d: leftArmPath  }} transition={T} stroke={skin} strokeWidth={p.armW} strokeLinecap="round" fill="none" />
-      <motion.path animate={{ d: rightArmPath }} transition={T} stroke={skin} strokeWidth={p.armW} strokeLinecap="round" fill="none" />
-      <motion.circle animate={{ cx: CX - p.armEX, cy: p.armEY, r: p.armW * 0.55 }} transition={T} fill={skin} />
-      <motion.circle animate={{ cx: CX + p.armEX, cy: p.armEY, r: p.armW * 0.55 }} transition={T} fill={skin} />
+      <path d={leftArmPath}  stroke={skin} strokeWidth={p.armW} strokeLinecap="round" fill="none" />
+      <path d={rightArmPath} stroke={skin} strokeWidth={p.armW} strokeLinecap="round" fill="none" />
+      <circle cx={CX - p.armEX} cy={p.armEY} r={p.armW * 0.55} fill={skin} />
+      <circle cx={CX + p.armEX} cy={p.armEY} r={p.armW * 0.55} fill={skin} />
 
-      {/* neck */}
-      <motion.rect
-        animate={{ x: CX - p.neckW/2, y: p.neckTop, width: p.neckW, height: p.neckBot - p.neckTop, rx: p.neckW/2 }}
-        transition={T}
-        fill={skin}
-      />
+      <rect x={CX - p.neckW/2} y={p.neckTop} width={p.neckW} height={p.neckBot - p.neckTop} rx={p.neckW/2} fill={skin} />
 
-      {/* double chin */}
-      <motion.ellipse
-        animate={{ cx: CX, cy: p.neckTop + 4, rx: p.chinRX, ry: p.chinRY, opacity: p.chinOp }}
-        transition={T}
-        fill={skin}
-      />
+      <ellipse cx={CX} cy={p.neckTop + 4} rx={p.chinRX} ry={p.chinRY} opacity={p.chinOp} fill={skin} />
 
-      {/* hair cap */}
       {showHair && (
-        <motion.ellipse
-          animate={{ cx: CX, cy: p.headCY - p.headR * 0.25, rx: p.headR + 5, ry: p.headR * 0.85, opacity: 1 }}
-          transition={T}
-          fill={hair}
-        />
+        <ellipse cx={CX} cy={p.headCY - p.headR * 0.25} rx={p.headR + 5} ry={p.headR * 0.85} fill={hair} />
       )}
 
-      {/* head */}
-      <motion.circle animate={{ cx: CX, cy: p.headCY, r: p.headR }} transition={T} fill={skin} filter="url(#char-shadow)" />
-      <motion.circle animate={{ cx: CX, cy: p.headCY, r: p.headR }} transition={T} fill={`url(#skinGrad${gradId})`} />
+      <circle cx={CX} cy={p.headCY} r={p.headR} fill={skin} filter="url(#char-shadow)" />
+      <circle cx={CX} cy={p.headCY} r={p.headR} fill={`url(#skinGrad${gradId})`} />
 
-      {/* ears */}
-      <motion.ellipse animate={{ cx: CX - p.headR + 2, cy: p.headCY + 4, rx: 10, ry: 13 }} transition={T} fill={skin} />
-      <motion.ellipse animate={{ cx: CX + p.headR - 2, cy: p.headCY + 4, rx: 10, ry: 13 }} transition={T} fill={skin} />
+      <ellipse cx={CX - p.headR + 2} cy={p.headCY + 4} rx={10} ry={13} fill={skin} />
+      <ellipse cx={CX + p.headR - 2} cy={p.headCY + 4} rx={10} ry={13} fill={skin} />
 
-      {/* cheeks */}
-      <motion.ellipse animate={{ cx: CX - p.cheekOffX, cy: p.cheekY, rx: p.cheekRX, ry: p.cheekRY, opacity: p.cheekOp }} transition={T} fill="#ff8080" />
-      <motion.ellipse animate={{ cx: CX + p.cheekOffX, cy: p.cheekY, rx: p.cheekRX, ry: p.cheekRY, opacity: p.cheekOp }} transition={T} fill="#ff8080" />
+      <ellipse cx={CX - p.cheekOffX} cy={p.cheekY} rx={p.cheekRX} ry={p.cheekRY} opacity={p.cheekOp} fill="#ff8080" />
+      <ellipse cx={CX + p.cheekOffX} cy={p.cheekY} rx={p.cheekRX} ry={p.cheekRY} opacity={p.cheekOp} fill="#ff8080" />
 
-      {/* eyebrows */}
-      <motion.path
-        animate={{ d: `M ${CX - p.browOffX - p.browLen/2} ${p.browY} Q ${CX - p.browOffX} ${p.browY - 5} ${CX - p.browOffX + p.browLen/2} ${p.browY}` }}
-        transition={T} stroke="#3a1c00" strokeWidth={3.5} strokeLinecap="round" fill="none"
+      <path
+        d={`M ${CX - p.browOffX - p.browLen/2} ${p.browY} Q ${CX - p.browOffX} ${p.browY - 5} ${CX - p.browOffX + p.browLen/2} ${p.browY}`}
+        stroke="#3a1c00" strokeWidth={3.5} strokeLinecap="round" fill="none"
       />
-      <motion.path
-        animate={{ d: `M ${CX + p.browOffX - p.browLen/2} ${p.browY} Q ${CX + p.browOffX} ${p.browY - 5} ${CX + p.browOffX + p.browLen/2} ${p.browY}` }}
-        transition={T} stroke="#3a1c00" strokeWidth={3.5} strokeLinecap="round" fill="none"
+      <path
+        d={`M ${CX + p.browOffX - p.browLen/2} ${p.browY} Q ${CX + p.browOffX} ${p.browY - 5} ${CX + p.browOffX + p.browLen/2} ${p.browY}`}
+        stroke="#3a1c00" strokeWidth={3.5} strokeLinecap="round" fill="none"
       />
 
-      {/* eyes */}
-      <motion.ellipse animate={{ cx: CX - p.eyeOffX, cy: p.eyeY, rx: p.eyeRX, ry: p.eyeRY }} transition={T} fill="white" />
-      <motion.ellipse animate={{ cx: CX + p.eyeOffX, cy: p.eyeY, rx: p.eyeRX, ry: p.eyeRY }} transition={T} fill="white" />
-      <motion.circle animate={{ cx: CX - p.eyeOffX, cy: p.eyeY + 1, r: p.pupilR + 1.5 }} transition={T} fill="#5a3010" />
-      <motion.circle animate={{ cx: CX + p.eyeOffX, cy: p.eyeY + 1, r: p.pupilR + 1.5 }} transition={T} fill="#5a3010" />
-      <motion.circle animate={{ cx: CX - p.eyeOffX, cy: p.eyeY + 1, r: p.pupilR }} transition={T} fill="#111" />
-      <motion.circle animate={{ cx: CX + p.eyeOffX, cy: p.eyeY + 1, r: p.pupilR }} transition={T} fill="#111" />
-      <motion.circle animate={{ cx: CX - p.eyeOffX + 2, cy: p.eyeY - 2, r: 1.5 }} transition={T} fill="white" />
-      <motion.circle animate={{ cx: CX + p.eyeOffX + 2, cy: p.eyeY - 2, r: 1.5 }} transition={T} fill="white" />
+      <ellipse cx={CX - p.eyeOffX} cy={p.eyeY} rx={p.eyeRX} ry={p.eyeRY} fill="white" />
+      <ellipse cx={CX + p.eyeOffX} cy={p.eyeY} rx={p.eyeRX} ry={p.eyeRY} fill="white" />
+      <circle cx={CX - p.eyeOffX} cy={p.eyeY + 1} r={p.pupilR + 1.5} fill="#5a3010" />
+      <circle cx={CX + p.eyeOffX} cy={p.eyeY + 1} r={p.pupilR + 1.5} fill="#5a3010" />
+      <circle cx={CX - p.eyeOffX} cy={p.eyeY + 1} r={p.pupilR} fill="#111" />
+      <circle cx={CX + p.eyeOffX} cy={p.eyeY + 1} r={p.pupilR} fill="#111" />
+      <circle cx={CX - p.eyeOffX + 2} cy={p.eyeY - 2} r={1.5} fill="white" />
+      <circle cx={CX + p.eyeOffX + 2} cy={p.eyeY - 2} r={1.5} fill="white" />
 
-      {/* nose */}
-      <motion.ellipse animate={{ cx: CX, cy: p.noseY - 2, rx: p.noseRX, ry: p.noseRY }} transition={T} fill={skin} />
-      <motion.ellipse animate={{ cx: CX - p.noseRX * 0.6, cy: p.noseY, rx: p.noseRX * 0.45, ry: p.noseRY * 0.4 }} transition={T} fill="#a05050" opacity={0.5} />
-      <motion.ellipse animate={{ cx: CX + p.noseRX * 0.6, cy: p.noseY, rx: p.noseRX * 0.45, ry: p.noseRY * 0.4 }} transition={T} fill="#a05050" opacity={0.5} />
+      <ellipse cx={CX} cy={p.noseY - 2} rx={p.noseRX} ry={p.noseRY} fill={skin} />
+      <ellipse cx={CX - p.noseRX * 0.6} cy={p.noseY} rx={p.noseRX * 0.45} ry={p.noseRY * 0.4} fill="#a05050" opacity={0.5} />
+      <ellipse cx={CX + p.noseRX * 0.6} cy={p.noseY} rx={p.noseRX * 0.45} ry={p.noseRY * 0.4} fill="#a05050" opacity={0.5} />
 
-      {/* country accessories drawn between face and mouth so hat sits on top */}
-      <Accessories accessories={accessories} stage={stage} CX={CX} p={p} palette={palette} />
+      <Accessories accessories={accessories} stage={intStage} CX={CX} p={p} palette={palette} />
 
-      {/* open mouth (refed for tap-target alignment) */}
       <g ref={mouthRef}>
-        <motion.ellipse animate={{ cx: CX, cy: p.mouthY + 1, rx: p.mouthRX + 2, ry: p.mouthRY + 2 }} transition={T} fill="#8B3A3A" />
-        <motion.ellipse animate={{ cx: CX, cy: p.mouthY, rx: p.mouthRX, ry: p.mouthRY }} transition={T} fill="#2a0000" />
-        <motion.ellipse animate={{ cx: CX, cy: p.mouthY + p.mouthRY * 0.4, rx: p.mouthRX * 0.65, ry: p.mouthRY * 0.6 }} transition={T} fill="#e0546a" />
-        <motion.ellipse animate={{ cx: CX, cy: p.mouthY + p.mouthRY * 0.3, rx: p.mouthRX * 0.25, ry: p.mouthRY * 0.2 }} transition={T} fill="#f0708a" opacity={0.6} />
+        <ellipse cx={CX} cy={p.mouthY + 1} rx={p.mouthRX + 2} ry={p.mouthRY + 2} fill="#8B3A3A" />
+        <ellipse cx={CX} cy={p.mouthY} rx={p.mouthRX} ry={p.mouthRY} fill="#2a0000" />
+        <ellipse cx={CX} cy={p.mouthY + p.mouthRY * 0.4} rx={p.mouthRX * 0.65} ry={p.mouthRY * 0.6} fill="#e0546a" />
+        <ellipse cx={CX} cy={p.mouthY + p.mouthRY * 0.3} rx={p.mouthRX * 0.25} ry={p.mouthRY * 0.2} fill="#f0708a" opacity={0.6} />
         {Array.from({ length: Math.max(teethCount, 3) }).map((_, i) => {
           const totalTeeth = Math.max(teethCount, 3)
           const toothW = (p.mouthRX * 2 * 0.9) / totalTeeth
           const startX = CX - p.mouthRX * 0.9 + i * toothW
           return (
-            <motion.rect
+            <rect
               key={i}
-              animate={{ x: startX + 1, y: p.mouthY - p.mouthRY, width: toothW - 2, height: p.mouthRY * 0.65, rx: 2 }}
-              transition={T}
-              fill="white"
+              x={startX + 1} y={p.mouthY - p.mouthRY}
+              width={toothW - 2} height={p.mouthRY * 0.65}
+              rx={2} fill="white"
             />
           )
         })}
-        <motion.circle animate={{ cx: CX + p.mouthRX * 0.5, cy: p.mouthY + p.mouthRY * 0.5, r: 2.5 }} transition={T} fill="white" opacity={0.7} />
+        <circle cx={CX + p.mouthRX * 0.5} cy={p.mouthY + p.mouthRY * 0.5} r={2.5} fill="white" opacity={0.7} />
       </g>
 
-      {/* sweat for fatter stages */}
-      {stage >= 3 && (
+      {stageFloat >= 3 && (
         <>
           <motion.ellipse cx={CX - p.headR + 8} cy={p.headCY - p.headR * 0.3}
             animate={{ opacity: [0.8, 0.3, 0.8] }} transition={{ repeat: Infinity, duration: 2 }}
@@ -240,11 +224,10 @@ function FatManSVGImpl({ stage, palette, accessories = [], mouthRef, level = 1 }
   )
 }
 
-// Memoized: stage/palette/accessories/level only change on level-up. The mouthRef
-// is a stable ref. Re-rendering a 30-element motion SVG on every tap is the
-// hottest single thing we can avoid for 60fps tap response.
+// Re-render on every stage float change (continuous growth per tap).
+// Plain SVG attributes (no per-element motion) make this cheap at 60fps.
 const FatManSVG = memo(FatManSVGImpl, (prev, next) =>
-  prev.stage === next.stage &&
+  Math.abs(prev.stage - next.stage) < 0.001 &&
   prev.level === next.level &&
   prev.palette === next.palette &&
   prev.accessories === next.accessories &&

@@ -24,6 +24,8 @@ export default function GameScreen({ game, audio, haptic, speech }) {
   const [foods, setFoods] = useState([])
   const [scorePopups, setScorePopups] = useState([])
   const [bursts, setBursts] = useState([])
+  const [levelCompleteInfo, setLevelCompleteInfo] = useState(null)
+  const levelCompleteDismissRef = useRef(null)
   const mouthRef = useRef(null)
   const isBooming = game.gameState === game.GAME_STATES.BOOMING
   const boomFiredRef = useRef(false)
@@ -44,6 +46,12 @@ export default function GameScreen({ game, audio, haptic, speech }) {
       : [{ clientX: e.clientX, clientY: e.clientY }]
 
     const { x: mx, y: my } = getMouthCenter(mouthRef)
+
+    // Dismiss level-complete overlay on first tap
+    if (levelCompleteInfo) {
+      clearTimeout(levelCompleteDismissRef.current)
+      setLevelCompleteInfo(null)
+    }
 
     points.forEach((pt) => {
       game.click()
@@ -74,7 +82,7 @@ export default function GameScreen({ game, audio, haptic, speech }) {
     if (game.stageEventId === lastStageRef.current) return
     lastStageRef.current = game.stageEventId
     if (game.stageEventId === 0) return
-    audio.pop()
+    audio.burp()
     haptic.stage()
     setShakeId(s => s + 1)
     const { x, y } = getMouthCenter(mouthRef)
@@ -90,18 +98,22 @@ export default function GameScreen({ game, audio, haptic, speech }) {
     if (game.boomEventId === 0) return
     audio.boom()
     haptic.boom()
-    // Speak the country cry shortly after the boom kick — gives the synth time
-    // to finish so the voice doesn't get muddled by the bass thump.
     if (levelData.speech) {
-      setTimeout(() => speech?.speak(levelData.speech), 350)
+      setTimeout(() => speech?.speak(levelData.speech), 200)
     }
     setShakeId(s => s + 1)
     const { x, y } = getMouthCenter(mouthRef)
     setBursts(prev => [...prev,
-      { id: nid(), x, y, count: 30, color: '#fbbf24', radius: 220, duration: 0.9 },
-      { id: nid(), x, y, count: 24, color: '#ef4444', radius: 180, duration: 1.0 },
+      { id: nid(), x, y, count: 30, color: '#fbbf24', radius: 220, duration: 0.7 },
+      { id: nid(), x, y, count: 24, color: '#ef4444', radius: 180, duration: 0.8 },
     ])
-  }, [game.boomEventId, audio, haptic, speech, levelData.speech])
+    // Show non-blocking level-complete overlay — use a ref-based timer so
+    // it isn't cancelled when levelData (a new object each render) changes.
+    const info = { level: game.level, levelData }
+    setLevelCompleteInfo(info)
+    clearTimeout(levelCompleteDismissRef.current)
+    levelCompleteDismissRef.current = setTimeout(() => setLevelCompleteInfo(null), 2000)
+  }, [game.boomEventId, audio, haptic, speech, levelData, game.level])
 
   // Hand off after boom animation. We avoid depending on `game` (new object each
   // render) so the timeout doesn't get cancelled mid-flight.
@@ -111,7 +123,7 @@ export default function GameScreen({ game, audio, haptic, speech }) {
     if (!isBooming) { boomFiredRef.current = false; return }
     if (boomFiredRef.current) return
     boomFiredRef.current = true
-    const t = setTimeout(() => boomDoneRef.current(), 1300)
+    const t = setTimeout(() => boomDoneRef.current(), 500)
     return () => clearTimeout(t)
   }, [isBooming])
 
@@ -148,6 +160,8 @@ export default function GameScreen({ game, audio, haptic, speech }) {
               mouthRef={mouthRef}
               tapEventId={game.tapEventId}
               levelData={levelData}
+              combo={game.combo}
+              stageProgress={game.stageProgress}
             />
             <FingerCue visible={!isBooming && !game.tutorialSeen && game.totalClicks < 3} />
           </div>
@@ -186,6 +200,46 @@ export default function GameScreen({ game, audio, haptic, speech }) {
       {bursts.map(b => (
         <ParticleBurst key={b.id} {...b} onDone={() => removeBurst(b.id)} />
       ))}
+
+      {/* Level complete flash — non-blocking, pointer-events-none */}
+      <AnimatePresence>
+        {levelCompleteInfo && (() => {
+          const { level, levelData: ld } = levelCompleteInfo
+          const nextLd = levelFor(level + 1, game.dailyOffset)
+          return (
+            <motion.div
+              key={`lvl-done-${level}`}
+              className="fixed inset-x-0 flex flex-col items-center gap-2 pointer-events-none z-40"
+              style={{ top: '22%' }}
+              initial={{ opacity: 0, y: -16, scale: 0.88 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.92 }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+            >
+              <div
+                className="px-6 py-4 rounded-3xl flex flex-col items-center gap-2"
+                style={{
+                  background: `linear-gradient(135deg, ${ld.sky[0]}ee, ${ld.sky[1]}ee)`,
+                  border: '2px solid rgba(255,255,255,0.35)',
+                  backdropFilter: 'blur(12px)',
+                  boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{ld.flag}</span>
+                  <span className="text-white font-black text-lg tracking-wide drop-shadow">{ld.country} DONE!</span>
+                </div>
+                <div className="flex items-center gap-2 text-white/80 text-xs font-bold tracking-widest">
+                  <span>NEXT →</span>
+                  <span className="text-lg">{nextLd.flag}</span>
+                  <span className="text-white font-black">{nextLd.country}</span>
+                  <span>{nextLd.food}</span>
+                </div>
+              </div>
+            </motion.div>
+          )
+        })()}
+      </AnimatePresence>
     </div>
   )
 }

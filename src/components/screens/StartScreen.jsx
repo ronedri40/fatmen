@@ -10,7 +10,7 @@ function fmtTime(ms) {
   return `${Math.floor(s/60)}:${String(s%60).padStart(2, '0')}`
 }
 
-export default function StartScreen({ onStart, highScore, bestLevel, dailyBest, challenge }) {
+export default function StartScreen({ onStart, onContinue, onLeaderboard, hasSavedGame, highScore, bestLevel, dailyBest, challenge }) {
   // Cycle the showcased flag/food
   const [idx, setIdx] = useState(0)
   useEffect(() => {
@@ -26,7 +26,7 @@ export default function StartScreen({ onStart, highScore, bestLevel, dailyBest, 
       style={{
         background: 'radial-gradient(ellipse at 50% 30%, #1f2937 0%, #0a0a0a 70%)',
       }}
-      onClick={onStart}
+      onClick={hasSavedGame ? onContinue : onStart}
     >
       {/* Animated background blobs */}
       <motion.div
@@ -195,22 +195,58 @@ export default function StartScreen({ onStart, highScore, bestLevel, dailyBest, 
           </div>
         )}
 
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          animate={{
-            boxShadow: [
-              '0 0 20px rgba(251,146,60,0.4)',
-              '0 0 40px rgba(251,146,60,0.7)',
-              '0 0 20px rgba(251,146,60,0.4)',
-            ],
-          }}
-          transition={{ boxShadow: { duration: 1.6, repeat: Infinity } }}
-          className="mt-2 px-12 py-4 rounded-2xl font-black text-lg text-white tracking-wider
-            bg-gradient-to-r from-orange-500 to-red-500 border border-white/30
-            shadow-2xl"
-        >
-          ▶ FEED HIM
-        </motion.button>
+        <div className="flex flex-col gap-2 mt-2 w-full max-w-xs">
+          {hasSavedGame ? (
+            <>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={e => { e.stopPropagation(); onContinue() }}
+                animate={{ boxShadow: ['0 0 20px rgba(251,146,60,0.4)', '0 0 40px rgba(251,146,60,0.8)', '0 0 20px rgba(251,146,60,0.4)'] }}
+                transition={{ boxShadow: { duration: 1.6, repeat: Infinity } }}
+                className="w-full py-4 rounded-2xl font-black text-lg text-white tracking-wider
+                  bg-gradient-to-r from-orange-500 to-red-500 border border-white/30 shadow-2xl"
+              >
+                ▶ CONTINUE
+              </motion.button>
+              <div className="flex gap-3">
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={e => { e.stopPropagation(); onStart() }}
+                  className="flex-1 py-3 rounded-2xl font-black text-sm text-white/70 tracking-wider
+                    bg-white/8 border border-white/15 backdrop-blur-md"
+                >
+                  ↺ NEW GAME
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={e => { e.stopPropagation(); onLeaderboard() }}
+                  className="w-14 py-3 rounded-2xl font-black text-2xl bg-white/8 border border-white/15 backdrop-blur-md"
+                >
+                  🏆
+                </motion.button>
+              </div>
+            </>
+          ) : (
+            <div className="flex gap-3">
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                animate={{ boxShadow: ['0 0 20px rgba(251,146,60,0.4)', '0 0 40px rgba(251,146,60,0.7)', '0 0 20px rgba(251,146,60,0.4)'] }}
+                transition={{ boxShadow: { duration: 1.6, repeat: Infinity } }}
+                className="flex-1 py-4 rounded-2xl font-black text-lg text-white tracking-wider
+                  bg-gradient-to-r from-orange-500 to-red-500 border border-white/30 shadow-2xl"
+              >
+                ▶ FEED HIM
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={e => { e.stopPropagation(); onLeaderboard() }}
+                className="w-16 py-4 rounded-2xl font-black text-2xl bg-white/8 border border-white/15 backdrop-blur-md"
+              >
+                🏆
+              </motion.button>
+            </div>
+          )}
+        </div>
 
         {/* Country preview reel */}
         <div className="flex gap-1 mt-2">

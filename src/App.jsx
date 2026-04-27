@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useGameEngine } from './hooks/useGameEngine'
 import { useAudio } from './hooks/useAudio'
 import { useHaptic } from './hooks/useHaptic'
 import { useSpeech } from './hooks/useSpeech'
+import { useLeaderboard } from './hooks/useLeaderboard'
 import StartScreen from './components/screens/StartScreen'
 import GameScreen from './components/screens/GameScreen'
-import LevelUpScreen from './components/screens/LevelUpScreen'
+import LeaderboardScreen from './components/screens/LeaderboardScreen'
 import { readChallengeFromUrl, clearChallengeFromUrl } from './utils/challengeLink'
 import { LEVELS } from './constants/levels'
 
@@ -14,8 +15,10 @@ export default function App() {
   const audio = useAudio(game.soundOn)
   const haptic = useHaptic(game.hapticOn)
   const speech = useSpeech(game.soundOn)
+  const leaderboard = useLeaderboard()
 
-  // Pick up an inbound challenge link (from a friend's share) on first load.
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
+
   const [challenge, setChallenge] = useState(() => {
     const c = readChallengeFromUrl()
     if (!c) return null
@@ -24,10 +27,32 @@ export default function App() {
   })
   useEffect(() => { if (challenge) clearChallengeFromUrl() }, [challenge])
 
+  // Auto-save to leaderboard when going home, if score qualifies
+  const handleGoHome = useCallback(() => {
+    if (game.score > 0 && leaderboard.qualifies(game.score)) {
+      leaderboard.addEntry(game.score, game.level)
+    }
+    game.goHome()
+  }, [game, leaderboard])
+
+  if (showLeaderboard) {
+    return (
+      <LeaderboardScreen
+        entries={leaderboard.entries}
+        playerName={leaderboard.playerName}
+        onSetPlayerName={leaderboard.setPlayerName}
+        onBack={() => setShowLeaderboard(false)}
+      />
+    )
+  }
+
   if (game.gameState === game.GAME_STATES.IDLE) {
     return (
       <StartScreen
         onStart={() => { audio.ui(); game.start() }}
+        onContinue={() => { audio.ui(); game.continueSaved() }}
+        onLeaderboard={() => setShowLeaderboard(true)}
+        hasSavedGame={game.hasSavedGame}
         highScore={game.highScore}
         bestLevel={game.bestLevel}
         dailyBest={game.dailyBest}
@@ -36,22 +61,7 @@ export default function App() {
     )
   }
 
-  if (game.gameState === game.GAME_STATES.LEVEL_UP) {
-    return (
-      <LevelUpScreen
-        level={game.level}
-        score={game.score}
-        highScore={game.highScore}
-        comboPeak={game.comboPeak}
-        totalClicks={game.totalClicks}
-        levelDurationMs={game.levelDurationMs}
-        dailyOffset={game.dailyOffset}
-        onNext={() => { audio.levelUp(); game.nextLevel() }}
-        onRestart={() => { audio.ui(); game.restart() }}
-        onSound={audio.ui}
-      />
-    )
-  }
+  const gameWithInterceptedHome = { ...game, goHome: handleGoHome }
 
-  return <GameScreen game={game} audio={audio} haptic={haptic} speech={speech} />
+  return <GameScreen game={gameWithInterceptedHome} audio={audio} haptic={haptic} speech={speech} />
 }

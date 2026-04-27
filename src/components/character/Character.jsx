@@ -3,21 +3,31 @@ import { motion, AnimatePresence, useAnimation } from 'framer-motion'
 import { FAT_STAGES } from '../../constants/gameConfig'
 import FatManSVG from './FatManSVG'
 
-export default function Character({ level, fatStage, isBooming, mouthRef, tapEventId, levelData }) {
+export default function Character({ level, fatStage, isBooming, mouthRef, tapEventId, levelData, combo = 0, stageProgress = 0 }) {
   const stageInfo = FAT_STAGES[fatStage] || FAT_STAGES[0]
   const controls = useAnimation()
   const lastTapRef = useRef(0)
 
-  // Snappy chomp squash: 12-frame compress → bounce → settle.
-  // Total duration ~120ms so rapid taps still feel responsive at 8+ taps/sec.
+  const showAura = combo >= 10
+  const isRainbow = combo >= 25
+  const isUltra = combo >= 50
+  const auraIntensity = showAura ? Math.min(1, (combo - 10) / 40) : 0
+
+  // Float stage: e.g. fatStage=2, stageProgress=0.4 → 2.4
+  // Clamped to max stage so character never exceeds OBESE geometry
+  const floatStage = Math.min(fatStage + stageProgress, FAT_STAGES.length - 1)
+
+  // Eating lunge: character stretches UP toward incoming food, then settles.
+  // Looks like catching/eating rather than being hit.
   useEffect(() => {
     if (tapEventId === lastTapRef.current) return
     lastTapRef.current = tapEventId
     if (tapEventId === 0) return
     controls.start({
-      scaleX: [1, 1.08, 0.96, 1.02, 1],
-      scaleY: [1, 0.9, 1.06, 0.99, 1],
-      transition: { duration: 0.14, ease: [0.34, 1.56, 0.64, 1], times: [0, 0.25, 0.55, 0.8, 1] },
+      scaleX: [1, 0.94, 1.03, 1],
+      scaleY: [1, 1.12, 0.97, 1],
+      y: [0, -10, 2, 0],
+      transition: { duration: 0.18, ease: [0.34, 1.56, 0.64, 1], times: [0, 0.3, 0.7, 1] },
     })
   }, [tapEventId, controls])
 
@@ -47,14 +57,39 @@ export default function Character({ level, fatStage, isBooming, mouthRef, tapEve
               animate={{ y: [0, -6, 0] }}
               transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut' }}
             >
-              <motion.div animate={controls} style={{ transformOrigin: '50% 80%' }}>
-                <FatManSVG
-                  stage={fatStage}
-                  palette={levelData.palette}
-                  accessories={levelData.accessories}
-                  mouthRef={mouthRef}
-                  level={level}
-                />
+              <motion.div animate={controls} style={{ transformOrigin: '50% 80%', position: 'relative' }}>
+                {showAura && (
+                  <motion.div
+                    className="absolute pointer-events-none"
+                    style={{
+                      inset: '-20%',
+                      borderRadius: '50%',
+                      zIndex: 0,
+                      background: isRainbow
+                        ? 'conic-gradient(from 0deg, #f87171, #fb923c, #facc15, #4ade80, #60a5fa, #c084fc, #f472b6, #f87171)'
+                        : `radial-gradient(circle, #fb923c 0%, #ef4444 40%, transparent 70%)`,
+                      filter: `blur(${18 + auraIntensity * 14}px)`,
+                      opacity: 0.55 + auraIntensity * 0.3,
+                    }}
+                    animate={{
+                      scale: [1, 1.18, 0.96, 1.12, 1],
+                      rotate: isRainbow ? [0, 360] : [0, 0],
+                    }}
+                    transition={{
+                      scale: { duration: 0.7, repeat: Infinity, ease: 'easeInOut' },
+                      rotate: { duration: isUltra ? 1.2 : 2.5, repeat: Infinity, ease: 'linear' },
+                    }}
+                  />
+                )}
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  <FatManSVG
+                    stage={floatStage}
+                    palette={levelData.palette}
+                    accessories={levelData.accessories}
+                    mouthRef={mouthRef}
+                    level={level}
+                  />
+                </div>
               </motion.div>
             </motion.div>
           </motion.div>
